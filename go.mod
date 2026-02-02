@@ -1,9 +1,9 @@
 module synk
 
-go 1.23
+go 1.24.0
 
 require (
-	github.com/Ullaakut/nmap/v3 v3.1.0
+	github.com/schollz/peerdiscovery v1.7.6
 	github.com/wailsapp/wails/v2 v2.11.0
 )
 
@@ -31,11 +31,10 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.11.0 => /home/dominik/go/pkg/mod

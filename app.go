@@ -3,14 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	folderselector "synk/folder_selector"
 	"synk/utils"
 	"time"
-
-	nmap "github.com/Ullaakut/nmap/v3"
 )
 
 // App struct
@@ -23,10 +21,15 @@ func NewApp() *App {
 	return &App{}
 }
 
+var selectedFolder, err = os.UserHomeDir()
+
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	// TODO: Add a check for a saved value for the shared directory
+	utils.LANDiscovery()
 
 	// remove when done
 	var TEMP_TEST_DIRECTORY = "test_shared_dir_local"
@@ -41,9 +44,57 @@ func (a *App) startup(ctx context.Context) {
 
 }
 
+
+
+// Take in the user's command
+// Return the new directory, as well as the contents of the directory
+// nextFolder : if a folder was selected to be entered, specify which one
+func (a *App) FolderSelectorControl (currentDir string, command folderselector.FolderSelectorCommand, nextFolder string) folderselector.FolderSelectorResult {
+	var output folderselector.FolderSelectorResult
+	
+	switch command {
+	case folderselector.Init:
+		//TODO: Add a feature that makes the program remember the user's selection
+		output = folderselector.InitializeFolderSelector()
+		// selectedFolder = output.Directory
+	case folderselector.GoHome:
+		output = folderselector.GoToHomeDir()		
+	case folderselector.MoveUp:
+		output = folderselector.MoveUpDir(currentDir)
+		// selectedFolder = output.Directory
+	case folderselector.MoveDown:
+		output = folderselector.MoveDownDir(currentDir, nextFolder)
+		// selectedFolder = output.Directory
+	case folderselector.Select:
+		folderselector.SelectSharedFolder(currentDir)
+		output = folderselector.FolderSelectorResult{Directory: "", Files: make([]string, 0)}
+	}
+
+	fmt.Println(output)
+
+	return output
+}
+
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
+}
+
+var shared_directory = ""
+// to be called by the frontend, sets the value of the shared directory in the backend
+func (a *App) SetSharedDirectory(dir string) {
+	shared_directory = dir
+	fmt.Println("INFO: Shared directory has been set to: ", dir)
+}
+
+func (a *App) RunSynk() {
+	// check to make sure shared_directory is not empty
+	if shared_directory == "" {
+		fmt.Println("ERROR: Shared Directory has not been specified!")
+	} else {
+		// TODO: Actually implement the synchronizing over the network.
+		RunScan()
+	}
 }
 
 // Given the directory that the user has chosen as their "shared directory",
@@ -110,50 +161,7 @@ func compareSharedDirectories(localDir map[string]time.Time, remoteDir map[strin
 	return output
 }
 
-// runScan scans the local network
-func runScan() {
-	// Equivalent to
-	// nmap -sV -T4 192.168.0.0/24 with a filter to remove non-RTSP ports.
-	scanner, err := nmap.NewScanner(
-		context.Background(),
-		nmap.WithTargets("192.168.0.0/24"),
-		nmap.WithPorts("80", "554", "8554"),
-		nmap.WithServiceInfo(),
-		nmap.WithTimingTemplate(nmap.TimingAggressive),
-		// Filter out ports that are not RTSP
-		// nmap.WithFilterPort(func(p nmap.Port) bool {
-		// 	return p.Service.Name == "rtsp"
-		// }),
-		// Filter out hosts that don't have any open ports
-		nmap.WithFilterHost(func(h nmap.Host) bool {
-			// Filter out hosts with no open ports.
-			for idx := range h.Ports {
-				if h.Ports[idx].Status() == "open" {
-					return true
-				}
-			}
-
-			return false
-		}),
-	)
-	if err != nil {
-		log.Fatalf("unable to create nmap scanner: %v", err)
-	}
-
-	result, warnings, err := scanner.Run()
-	if len(*warnings) > 0 {
-		log.Printf("run finished with warnings: %s\n", *warnings) // Warnings are non-critical errors from nmap.
-	}
-	if err != nil {
-		log.Fatalf("nmap scan failed: %v", err)
-	}
-
-	for _, host := range result.Hosts {
-		fmt.Printf("Host %s\n", host.Addresses[0])
-
-		for _, port := range host.Ports {
-			fmt.Printf("\tPort %d open\n", port.ID)
-		}
-	}
+// RunScan scans the local network for other Synk users
+func RunScan() {
 
 }

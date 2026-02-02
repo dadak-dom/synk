@@ -1,12 +1,34 @@
 <script lang="ts" setup>
-import HelloWorld from './components/HelloWorld.vue'</script>
+import AppLogo from "./components/AppLogo.vue";
+import FolderSelector from "./components/FolderSelector.vue";
+import PeerList from "./components/PeerList.vue";
+</script>
 
 <template>
-  <img id="logo" alt="Wails logo" src="./assets/images/logo-universal.png"/>
-  <HelloWorld/>
+  <!-- <img id="logo" alt="Wails logo" src="./assets/images/logo-universal.png" /> -->
+  <AppLogo />
+  <!-- <SetDirectory /> -->
+  <!-- <SynkButton /> -->
+  <div class="main-app">
+    <div class="wrapper">
+      <FolderSelector />
+      <PeerList />
+    </div>
+  </div>
 </template>
 
 <style>
+.main-app {
+  display: flex;
+  justify-content: space-around;
+}
+
+.wrapper {
+  max-width: 80vw;
+  display: flex;
+  justify-content: space-around;
+}
+
 #logo {
   display: block;
   width: 50%;
