@@ -6,14 +6,14 @@ export function FolderSelectorControl(arg1, arg2, arg3) {
   return window['go']['main']['App']['FolderSelectorControl'](arg1, arg2, arg3);
 }
 
+export function GetPeerList() {
+  return window['go']['main']['App']['GetPeerList']();
+}
+
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
 
-export function RunSynk() {
-  return window['go']['main']['App']['RunSynk']();
-}
-
-export function SetSharedDirectory(arg1) {
-  return window['go']['main']['App']['SetSharedDirectory'](arg1);
+export function RunSynkOnPeer(arg1, arg2) {
+  return window['go']['main']['App']['RunSynkOnPeer'](arg1, arg2);
 }

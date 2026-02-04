@@ -6,6 +6,10 @@ import { FolderSelectorControl } from "../../wailsjs/go/main/App";
 const enableSelector = ref(false);
 const currentDir = ref();
 const filesInCurrentDir = ref<string[]>([]);
+var rawFilesInCurrentDir = <string[]>[];
+
+// Options for viewing the file selector:
+const showHiddenFiles = ref(false);
 
 const FolderSelectorCommands = {
   MOVE_UP: 0,
@@ -23,6 +27,8 @@ function moveUpDir() {
   ).then((value) => {
     currentDir.value = value.Directory;
     filesInCurrentDir.value = value.Files;
+    rawFilesInCurrentDir = filesInCurrentDir.value;
+    handleShowHidden();
     console.log(filesInCurrentDir.value);
   });
 }
@@ -35,6 +41,8 @@ function moveDownDir(f: string) {
   ).then((value) => {
     currentDir.value = value.Directory;
     filesInCurrentDir.value = value.Files;
+    rawFilesInCurrentDir = filesInCurrentDir.value;
+    handleShowHidden();
     console.log(filesInCurrentDir.value);
   });
 }
@@ -44,6 +52,8 @@ function goHome() {
     (value) => {
       currentDir.value = value.Directory;
       filesInCurrentDir.value = value.Files;
+      rawFilesInCurrentDir = filesInCurrentDir.value;
+      handleShowHidden();
       console.log(filesInCurrentDir.value);
     },
   );
@@ -54,6 +64,21 @@ function selectFolder() {
   FolderSelectorControl(currentDir.value, FolderSelectorCommands.SELECT, "");
 }
 
+function cancelFolderSelect() {
+  enableSelector.value = false;
+}
+
+function handleShowHidden() {
+  if (!showHiddenFiles.value) {
+    rawFilesInCurrentDir = filesInCurrentDir.value;
+    filesInCurrentDir.value = filesInCurrentDir.value.filter(
+      (file) => !file.startsWith("."),
+    );
+  } else {
+    filesInCurrentDir.value = rawFilesInCurrentDir;
+  }
+}
+
 function chooseNewDir() {
   enableSelector.value = true;
 }
@@ -62,6 +87,7 @@ onMounted(() => {
   FolderSelectorControl("", FolderSelectorCommands.INIT, "").then((value) => {
     currentDir.value = value.Directory;
     filesInCurrentDir.value = value.Files;
+    handleShowHidden();
     console.log(filesInCurrentDir.value);
     if (currentDir.value == "") {
       enableSelector.value = true;
@@ -76,9 +102,22 @@ onMounted(() => {
       <p class="current-directory">Current directory: {{ currentDir }}</p>
       <button class="nav-button" @click="moveUpDir">↑ Move Up</button>
       <button class="nav-button" @click="goHome">Go Home</button>
+      <button class="nav-button" @click="cancelFolderSelect">Cancel</button>
       <button class="nav-button" @click="selectFolder">
         Select this folder
       </button>
+      <div class="option">
+        <div>Show hidden folders</div>
+        <label class="switch">
+          <input
+            type="checkbox"
+            v-bind:checked="showHiddenFiles"
+            v-model="showHiddenFiles"
+            @change="handleShowHidden"
+          />
+          <span class="slider round"></span>
+        </label>
+      </div>
     </div>
 
     <div
@@ -113,7 +152,6 @@ onMounted(() => {
 <style scoped>
 .outer-div {
   margin: auto;
-  /* display: flex; */
 }
 
 .nav-button-group {
@@ -123,6 +161,11 @@ onMounted(() => {
   height: 100%;
   gap: 10px;
 
+  .option {
+    background-color: #aeb3ba;
+    color: black;
+  }
+
   .nav-button {
     background-color: lightgrey;
   }
@@ -131,7 +174,6 @@ onMounted(() => {
     border: solid black 2px;
     padding: 10px;
     background-color: lightgrey;
-    /* margin-top: 0; */
   }
 }
 
@@ -152,10 +194,6 @@ onMounted(() => {
       width: 3%;
     }
   }
-  /* .no-folders {
-    margin: auto;
-
-  } */
 }
 
 .no-folders {
@@ -168,40 +206,66 @@ onMounted(() => {
   margin: 1.5rem auto;
 }
 
-.input-box .btn {
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
   width: 60px;
-  height: 30px;
-  line-height: 30px;
-  border-radius: 3px;
-  border: none;
-  margin: 0 0 0 20px;
-  padding: 0 8px;
+  height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
   cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
 }
 
-.input-box .btn:hover {
-  background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-  color: #333333;
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
 }
 
-.input-box .input {
-  border: none;
-  border-radius: 3px;
-  outline: none;
-  height: 30px;
-  line-height: 30px;
-  padding: 0 10px;
-  background-color: rgba(240, 240, 240, 1);
-  -webkit-font-smoothing: antialiased;
+input:checked + .slider {
+  background-color: #33f321;
 }
 
-.input-box .input:hover {
-  border: none;
-  background-color: rgba(255, 255, 255, 1);
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196f3;
 }
 
-.input-box .input:focus {
-  border: none;
-  background-color: rgba(255, 255, 255, 1);
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 </style>

@@ -1,14 +1,23 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"log"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
+	"strconv"
 	folderselector "synk/folder_selector"
+	"synk/network"
 	"synk/utils"
 	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 // App struct
@@ -27,17 +36,34 @@ var selectedFolder, err = os.UserHomeDir()
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	router := gin.Default()
+	// router.SetTrustedProxies([]string{})
+
+	// FIXME: Consider setting up the API when starting a transfer, and then shutting it down when it's done
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:	[]string{"*"},
+		AllowMethods:	[]string{"GET", "POST"},
+	}))
+
+	// Send information about the shared folder to the "active" peer
+	router.GET("/getSharedFolder", network.GetSharedFolderInfo)
+	router.GET("/getFile", network.GetFile)
+	router.POST("/uploadFile", network.UploadFile)
+	router.Run("localhost:8080")
+	// TODO: Use the following guide to figure out how to send files back and forth:
+	// https://gin-gonic.com/en/docs/examples/upload-file/single-file/
 
 	// TODO: Add a check for a saved value for the shared directory
-	utils.LANDiscovery()
+	network.LANDiscovery()
 
 	// remove when done
-	var TEMP_TEST_DIRECTORY = "test_shared_dir_local"
-	var TEMP_TEST_DIRECTORY_REMOTE = "test_shared_dir_remote"
-	// ttestsetestsetetestset
-	scanSharedDirectory(TEMP_TEST_DIRECTORY)
+	// var TEMP_TEST_DIRECTORY = "test_shared_dir_local"
+	// var TEMP_TEST_DIRECTORY_REMOTE = "test_shared_dir_remote"
+	// var local_file_info = utils.ScanSharedDirectory(TEMP_TEST_DIRECTORY)
+	// var remote_file_info = utils.ScanSharedDirectory(TEMP_TEST_DIRECTORY_REMOTE)
 
-	compareSharedDirectories(scanSharedDirectory(TEMP_TEST_DIRECTORY), scanSharedDirectory(TEMP_TEST_DIRECTORY_REMOTE))
+	// compareSharedDirectories(local_file_info, remote_file_info)
+
 
 	// runScan()
 	// fmt.Println("scan done?")
@@ -80,88 +106,162 @@ func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
-var shared_directory = ""
-// to be called by the frontend, sets the value of the shared directory in the backend
-func (a *App) SetSharedDirectory(dir string) {
-	shared_directory = dir
-	fmt.Println("INFO: Shared directory has been set to: ", dir)
+// Returns the URL of the remote client that we are connecting to
+func (a *App) GetPeerList() []string {
+	// TODO: Actually implement this. Will probably need some global
+	// variable that tracks what devices we're connected with
+	return []string{"localhost:8080"}
 }
 
-func (a *App) RunSynk() {
-	// check to make sure shared_directory is not empty
-	if shared_directory == "" {
-		fmt.Println("ERROR: Shared Directory has not been specified!")
-	} else {
-		// TODO: Actually implement the synchronizing over the network.
-		RunScan()
-	}
-}
+func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time) {
+	// fmt.Println("Running RunSynk on: ", connection, filesToReceive, filesToSend)
+	// fmt.Println("Called RunSynk")
+	// fmt.Println("Received: ", connection, peerFileInfo)
 
-// Given the directory that the user has chosen as their "shared directory",
-// return a dictionary where the key is the file name, and the value is the last modified time
-func scanSharedDirectory(dir string) map[string]time.Time {
+	// compare the shared directories
+	// FIXME: The code below this comment is correct. Uncomment once peer discovery works
+	// local_shared_folder := config.GetConfigValue(config.SharedDirectory)
+	local_shared_folder := "test_shared_dir_local"
+	comparison := utils.CompareSharedDirectories(utils.ScanSharedDirectory(local_shared_folder), peerFileInfo)
+	filesToSend, filesToReceive := comparison["SEND"], comparison["RECEIVE"]
+	fmt.Println("Files to send: ", filesToSend)
+	fmt.Println("Files to receive", filesToReceive)
+	log.Println("\n=========================\nCOMPARISON RESULTS\n========================\nLOCAL:")
+	log.Println(utils.DirMapToString(utils.ScanSharedDirectory(local_shared_folder)))
+	log.Println("\n=========================\nCOMPARISON RESULTS\n========================\nREMOTE:")
+	log.Println(utils.DirMapToString(peerFileInfo))
+	log.Println("===========================================")
 
-	output := make(map[string]time.Time)
-
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	// download the files
+	// how this works: since this computer (the "active" one) has already received information re: remote files via
+	// 	peerFileInfo, convert peerFileInfo into a list and ask for the index of the file you need.
+	// 	This works because the remote "passive" peer will also have the same sorted list
+	remote_names, _ := utils.ConvertSharedDirectoryMapToLists(peerFileInfo)
+	for _, f := range filesToReceive {
+		fmt.Println("Receive file: ", f, " with index: ", utils.IndexOf(remote_names, f))
+		fileIndex := utils.IndexOf(remote_names, f)
+		resp, err := http.Get(connection + "/getFile?index=" + strconv.Itoa(fileIndex))
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
-		fmt.Println(info.ModTime())
-		output[strings.Replace(path, dir, "SYNK_ROOT_DIRECTORY", 1)] = info.ModTime()
-		return nil
-	})
-	if err != nil {
-		panic(err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("Status Code: %d\n", resp.StatusCode)
+		// fmt.Printf("Body: %s\n", body)
+		// FIXME: actually save the file to the shared directory
+		// will need to copy files to temp folder, complete operation, then delete the temp folder
+		// FIXME: For now, just save the file to the test directory
+		fmt.Println("Trying to write to: ", filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)))
+		errWrite := os.WriteFile(filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), body, 0644)
+		if errWrite != nil {
+
+			fmt.Println("Error when writing:")
+			log.Fatal(errWrite)
+		}
+		log.Println("File ", filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), " written successfully.")
+		// os.WriteFile(filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), body, 0644)
 	}
 
-	// fmt.Println(output)
-	fmt.Println(utils.DirMapToString(output))
-
-	return output
-}
-
-// Given: local directory contents, remote directory contents
-// Return: Files that need to be requested from remote peer, files that the remote peer needs
-//
-//	to request from the local peer
-func compareSharedDirectories(localDir map[string]time.Time, remoteDir map[string]time.Time) map[string][]string {
-	output := make(map[string][]string)
-	send_list, receive_list := make([]string, 0), make([]string, 0)
-
-	// get the keys from each input mapping
-	// local_file_names, remote_file_names := maps.Keys(localDir), maps.Keys(remoteDir)
-
-	// if a key is only present locally, add it to the send list
-	// if a key is only present remotely, add it to the receive list
-	// if a key is present in both, compare the value in the mapping
-	//		if the local version is newer, add it to the send list
-	//		if the remote version is newer, add it to the receive list
-
-	only_local, only_remote, in_both := utils.CompareKeys(localDir, remoteDir)
-	fmt.Println("Only local: ", only_local)
-	fmt.Println("Only remote: ", only_remote)
-	fmt.Println("Both: ", in_both)
-
-	send_list = append(send_list, only_local...)
-	receive_list = append(receive_list, only_remote...)
-
-	for _, fileName := range in_both {
-		if localDir[fileName].Before(remoteDir[fileName]) {
-			send_list = append(send_list, fileName)
-		} else if localDir[fileName].After(remoteDir[fileName]) {
-			receive_list = append(receive_list, fileName)
+	log.Println("===========================\nRECEIVING DONE, NOW SENDING\n==========================")
+	log.Println("Files to send: ", filesToSend)
+	// TODO : upload files to peer
+	for _, f := range filesToSend {
+		// fmt.Println("Send file: ", f, " with index: ", utils.IndexOf(, f))
+		// fileIndex := utils.IndexOf(remote_names, f)
+		// resp, err := http.Get(connection + "/getFile?index=" + strconv.Itoa(fileIndex))
+		
+		// get file that needs to be uploaded to peer
+		// FIXME: The line below is correct. Uncomment once done prototyping
+		// file_content, errReading := os.Open(config.ConstructCompleteFilePath(f))
+		file_content, errReading := os.Open(filepath.Join("test_shared_dir_local", filepath.Base(f)))
+		if errReading != nil {
+			log.Fatal("Could not open file: ", errReading)
 		}
+
+		var requestBody bytes.Buffer
+		writer := multipart.NewWriter(&requestBody)
+
+		defer file_content.Close()
+
+		part, err := writer.CreateFormFile("file", filepath.Base(f))
+		if err != nil {
+			log.Fatal("Error creating form file: ", err)
+		}
+
+		_, err = io.Copy(part, file_content)
+		if err != nil {
+			log.Fatal("Error copying file data: ", err)
+		}
+
+		err = writer.Close()
+		if err != nil {
+			log.Fatal("Error closing writer: ", err)
+		}
+		url := connection + "/uploadFile"
+		req, err := http.NewRequest("POST", url, &requestBody)
+		if err != nil {
+			log.Fatal("Error creating request: ", err)
+		}
+
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Error sending request: ", err)
+		}
+		defer resp.Body.Close()
+
+		log.Println("Server responded with status: ", resp.Status)
+
+		// var b bytes.Buffer
+		// w := multipart.NewWriter(&b)
+
+		// values := map[string]io.Reader{
+		// 	"file": file_content,
+		// }
+		
+		// log.Println("file_content: ", file_content)
+		// FIXME there is a bug somewhere here. The API has been verified to work via curl
+		// for key, r := range values {
+		// 	var fw io.Writer
+		// 	if x, ok := r.(io.Closer); ok {
+		// 		defer x.Close()
+		// 	}
+		// 	if x, ok := r.(*os.File); ok {
+		// 		if fw, err = w.CreateFormFile(key, x.Name()); err != nil {
+		// 			// return
+		// 		} else {
+		// 			if fw, err = w.CreateFormField(key); err != nil {
+		// 				// return
+		// 			}
+		// 		}
+		// 	}
+		// 	if _, err = io.Copy(fw, r); err != nil {
+		// 		// return err
+		// 		log.Fatal("Error when creating multipart form: ", err)
+		// 	}
+		// }
+		// w.Close()
+		// // send the request
+		// req, err := http.NewRequest("POST", url, &b)
+		// if err != nil {
+		// 	log.Fatal("Error when creating POST request", err)
+		// }
+		// req.Header.Set("Content-Type", w.FormDataContentType())
+		// client := &http.Client{}
+		// resp, err := client.Do(req)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+		// defer resp.Body.Close()
+		// body, err := io.ReadAll(resp.Body)
+		// fmt.Printf("Status Code: %d\n", resp.StatusCode)
+		// fmt.Printf("Response Body: %s\n", body)
 	}
-
-	// finally, update the output var
-	output["SEND"] = send_list
-	output["RECEIVE"] = receive_list
-
-	return output
-}
-
-// RunScan scans the local network for other Synk users
-func RunScan() {
 
 }

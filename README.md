@@ -17,3 +17,13 @@ to this in your browser, and you can call your Go code from devtools.
 ## Building
 
 To build a redistributable, production mode package, use `wails build`.
+
+TODO:
+
+- Folder Selector:
+  - Add an option to hide hidden folders
+  - make it prettier
+- Multicast
+  - Make sure that the library works when used on the same LAN network
+- File sharing
+  - code up the file sending / receiving logic

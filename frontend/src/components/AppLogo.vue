@@ -1,9 +1,24 @@
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+import { GetPeerList } from "../../wailsjs/go/main/App";
+import { RunSynkOnPeer } from "../../wailsjs/go/main/App";
+
+// TODO: This is how I could get the file information from a remote peer.
+async function test() {
+  const peers = await GetPeerList();
+  peers.forEach(async (p) => {
+    let url = "http://" + p + "/getSharedFolder";
+    let response = await fetch(url);
+    let sharedFolderContents = await response.json();
+    console.log(sharedFolderContents);
+    RunSynkOnPeer("http://" + p, sharedFolderContents);
+  });
+}
+</script>
 
 <template>
   <main>
     <div>
-      <img src="../assets/images/sink.png" />
+      <img @click="test" src="../assets/images/sink.png" />
       <h1 id="app-name">"Synk"</h1>
     </div>
   </main>
