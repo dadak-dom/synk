@@ -1,15 +1,21 @@
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, useTemplateRef } from "vue";
 // import what I need from the backend...
 import { FolderSelectorControl } from "../../wailsjs/go/main/App";
 
 const enableSelector = ref(false);
 const currentDir = ref();
+const foldersInCurrentDir = ref<string[]>([]);
 const filesInCurrentDir = ref<string[]>([]);
-var rawFilesInCurrentDir = <string[]>[];
+var rawFoldersInCurrentDir = <string[]>[];
 
 // Options for viewing the file selector:
 const showHiddenFiles = ref(false);
+const onlyFolders = ref(false); // FIXME : should be named "showFiles", too tired to fix it now :(
+
+// Modal settings
+// const modal = useTemplateRef("modal");
+const modalOpacity = ref("0");
 
 const FolderSelectorCommands = {
   MOVE_UP: 0,
@@ -26,10 +32,12 @@ function moveUpDir() {
     "",
   ).then((value) => {
     currentDir.value = value.Directory;
+    foldersInCurrentDir.value = value.Folders;
+    rawFoldersInCurrentDir = foldersInCurrentDir.value;
     filesInCurrentDir.value = value.Files;
-    rawFilesInCurrentDir = filesInCurrentDir.value;
     handleShowHidden();
-    console.log(filesInCurrentDir.value);
+    handleOnlyFolders();
+    console.log(foldersInCurrentDir.value);
   });
 }
 
@@ -40,10 +48,12 @@ function moveDownDir(f: string) {
     f,
   ).then((value) => {
     currentDir.value = value.Directory;
+    foldersInCurrentDir.value = value.Folders;
+    rawFoldersInCurrentDir = foldersInCurrentDir.value;
     filesInCurrentDir.value = value.Files;
-    rawFilesInCurrentDir = filesInCurrentDir.value;
     handleShowHidden();
-    console.log(filesInCurrentDir.value);
+    handleOnlyFolders();
+    console.log(foldersInCurrentDir.value);
   });
 }
 
@@ -51,44 +61,68 @@ function goHome() {
   FolderSelectorControl("", FolderSelectorCommands.GO_HOME, "").then(
     (value) => {
       currentDir.value = value.Directory;
+      foldersInCurrentDir.value = value.Folders;
+      rawFoldersInCurrentDir = foldersInCurrentDir.value;
       filesInCurrentDir.value = value.Files;
-      rawFilesInCurrentDir = filesInCurrentDir.value;
       handleShowHidden();
-      console.log(filesInCurrentDir.value);
+      handleOnlyFolders();
+      console.log(foldersInCurrentDir.value);
     },
   );
 }
 
 function selectFolder() {
-  enableSelector.value = false;
+  modalOpacity.value = "0";
+  // enableSelector.value = false;
+  setTimeout(() => (enableSelector.value = false), 300);
   FolderSelectorControl(currentDir.value, FolderSelectorCommands.SELECT, "");
 }
 
 function cancelFolderSelect() {
-  enableSelector.value = false;
+  // enableSelector.value = false;
+  // if (modal.value !== null) {
+  //   modal.value.style.opacity = "0";
+  // }
+  modalOpacity.value = "0";
+  setTimeout(() => (enableSelector.value = false), 300);
 }
 
 function handleShowHidden() {
   if (!showHiddenFiles.value) {
-    rawFilesInCurrentDir = filesInCurrentDir.value;
-    filesInCurrentDir.value = filesInCurrentDir.value.filter(
+    rawFoldersInCurrentDir = foldersInCurrentDir.value;
+    foldersInCurrentDir.value = foldersInCurrentDir.value.filter(
       (file) => !file.startsWith("."),
     );
   } else {
-    filesInCurrentDir.value = rawFilesInCurrentDir;
+    foldersInCurrentDir.value = rawFoldersInCurrentDir;
   }
 }
 
 function chooseNewDir() {
   enableSelector.value = true;
+  setTimeout(() => (modalOpacity.value = "1"), 300);
+  // console.log(modal.value);
+
+  // if (modal.value !== null) {
+  //   modal.value.style.opacity = "1";
+  // }
+  // modalOpacity.value = "1";
 }
+
+function handleOnlyFolders() {}
 
 onMounted(() => {
   FolderSelectorControl("", FolderSelectorCommands.INIT, "").then((value) => {
     currentDir.value = value.Directory;
+    foldersInCurrentDir.value = value.Folders;
     filesInCurrentDir.value = value.Files;
     handleShowHidden();
-    console.log(filesInCurrentDir.value);
+    handleOnlyFolders();
+    // if (modal.value !== null) {
+    //   modal.value.style.opacity = "0"; // init modal opacity to 0
+    //   modal.value.style.transition = "opacity 1s";
+    // }
+    console.log(foldersInCurrentDir.value);
     if (currentDir.value == "") {
       enableSelector.value = true;
     }
@@ -97,78 +131,120 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="outer-div" v-if="enableSelector">
-    <div class="nav-button-group">
-      <p class="current-directory">Current directory: {{ currentDir }}</p>
-      <button class="nav-button" @click="moveUpDir">↑ Move Up</button>
-      <button class="nav-button" @click="goHome">Go Home</button>
-      <button class="nav-button" @click="cancelFolderSelect">Cancel</button>
-      <button class="nav-button" @click="selectFolder">
-        Select this folder
-      </button>
-      <div class="option">
-        <div>Show hidden folders</div>
-        <label class="switch">
-          <input
-            type="checkbox"
-            v-bind:checked="showHiddenFiles"
-            v-model="showHiddenFiles"
-            @change="handleShowHidden"
-          />
-          <span class="slider round"></span>
-        </label>
+  <main ref="modal" class="folder-selector-modal" v-show="enableSelector">
+    <div class="modal-wrapper">
+      <div class="options-and-current-dir">
+        <p class="current-directory">{{ currentDir }}</p>
+        <div class="options-wrapper">
+          <div class="option">
+            <div>Show hidden folders</div>
+            <label class="switch">
+              <input
+                type="checkbox"
+                v-bind:checked="showHiddenFiles"
+                v-model="showHiddenFiles"
+                @change="handleShowHidden"
+              />
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="option">
+            <div>Show files</div>
+            <label class="switch">
+              <input
+                type="checkbox"
+                v-bind:checked="onlyFolders"
+                v-model="onlyFolders"
+                @change="handleOnlyFolders"
+              />
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
-
-    <div
-      class="folder-selection-box"
-      v-if="filesInCurrentDir == undefined || filesInCurrentDir.length > 0"
-    >
-      <div v-for="file in filesInCurrentDir">
-        <!-- <FolderSelectorItem :fileName="file" /> -->
-
-        <button class="folder-button" @click="moveDownDir(file)">
-          {{ file }}
-          <img class="folder-image" src="../assets/images/folder.png" />
+      <div class="nav-button-group">
+        <button class="nav-button" @click="moveUpDir">↑ Move Up</button>
+        <button class="nav-button" @click="goHome">Go Home</button>
+        <button class="nav-button" @click="cancelFolderSelect">Cancel</button>
+        <button class="nav-button" @click="selectFolder">
+          Select this folder
         </button>
       </div>
-    </div>
-    <div v-else class="no-folders">
-      <p style="color: black">No folders in this directory.</p>
+
+      <div class="folder-selection-box">
+        <div
+          v-if="
+            foldersInCurrentDir == undefined || foldersInCurrentDir.length > 0
+          "
+          v-for="folder in foldersInCurrentDir"
+        >
+          <button class="folder-button" @click="moveDownDir(folder)">
+            <img class="folder-image" src="../assets/images/folder.png" />
+            <div class="folder-text">
+              {{ folder }}
+            </div>
+          </button>
+        </div>
+        <div v-if="onlyFolders" v-for="file in filesInCurrentDir">
+          <button class="folder-button">
+            <!-- <img class="folder-image" src="../assets/images/folder.png" /> -->
+            <div class="folder-text">
+              {{ file }}
+            </div>
+          </button>
+        </div>
+      </div>
+      <!-- <div v-else class="folder-selection-box">
+        <p style="color: black">No folders in this directory.</p>
+      </div> -->
     </div>
   </main>
-  <main v-else>
-    <div class="nav-button-group">
-      <p class="current-directory">
-        Current shared directory: {{ currentDir }}
-      </p>
-      <button @click="chooseNewDir" class="nav-button">
-        Change shared folder
-      </button>
+  <main>
+    <div class="change-folder-button">
+      <img class="" @click="chooseNewDir" src="../assets/images/folder.png" />
     </div>
   </main>
 </template>
 
 <style scoped>
-.outer-div {
+/* .outer-div {
   margin: auto;
+} */
+
+.folder-selector-modal {
+  position: absolute;
+  backdrop-filter: blur(10px);
+  width: 100%;
+  height: 100%;
+  opacity: v-bind(modalOpacity);
+  transition: opacity 0.3s;
+  /* background-color: #142431; */
 }
 
-.nav-button-group {
+.modal-wrapper {
+  position: relative;
+  top: 50%;
+  left: 30%;
+  transform: translate(-25%);
   display: flex;
-  margin: auto;
   justify-content: center;
-  height: 100%;
-  gap: 10px;
+  height: 40vh;
+  width: 80vw;
+}
 
-  .option {
-    background-color: #aeb3ba;
-    color: black;
-  }
+.options-and-current-dir {
+  width: 40vw;
 
-  .nav-button {
+  .options-wrapper {
+    display: grid;
+    grid-template-columns: auto auto auto;
     background-color: lightgrey;
+    .option {
+      /* background-color: #aeb3ba; */
+      color: black;
+    }
   }
+
   .current-directory {
     color: black;
     border: solid black 2px;
@@ -177,27 +253,46 @@ onMounted(() => {
   }
 }
 
+.nav-button-group {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  /* height: 100%; */
+  width: 150px;
+  gap: 10px;
+
+  .nav-button {
+    background-color: lightgrey;
+    width: 50%;
+    margin: auto;
+  }
+}
+
 .folder-selection-box {
-  display: grid;
-  grid-template-columns: auto auto auto;
-  max-height: 20vh;
+  display: list-item;
+  /* grid-template-columns: auto auto auto; */
+  /* max-height: 20vh; */
+  /* height: 100%; */
   overflow-y: scroll;
+  overflow-x: hidden;
+  width: 20vw;
 
   .folder-button {
     width: 100%;
     display: flex;
-    flex-direction: row-reverse;
-    justify-content: center;
+    justify-content: left;
     gap: 5px;
 
     .folder-image {
-      width: 3%;
+      width: 10%;
     }
   }
 }
 
 .no-folders {
   min-height: 30vh;
+  width: 20%;
+  background-color: lightgrey;
 }
 
 .result {
@@ -247,7 +342,7 @@ onMounted(() => {
 }
 
 input:checked + .slider {
-  background-color: #33f321;
+  background-color: #98cb98;
 }
 
 input:focus + .slider {

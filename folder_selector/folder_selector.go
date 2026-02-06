@@ -22,6 +22,25 @@ const (
 type FolderSelectorResult struct {
 	Directory string
 	Files []string
+	Folders []string
+}
+
+func ListFilesInDirectory(dir string) []string {
+	output := make([]string, 0)
+	if dir == "" {
+		return output
+	}
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		fmt.Println("FATAL ERROR in ListFilesInDirectory: ", err, "\n\tTried opening: ", dir)
+	}
+	for _, file := range files {
+		if !file.IsDir() {
+			output = append(output, file.Name())
+		}
+	}
+	sort.Slice(output, func(i, j int) bool { return strings.ToLower(output[i]) < strings.ToLower(output[j]) })
+	return output
 }
 
 func ListFoldersInDirectory(dir string) []string {
@@ -38,9 +57,6 @@ func ListFoldersInDirectory(dir string) []string {
 			output = append(output, file.Name())
 		}
 	}
-	// Source - https://stackoverflow.com/a
-	// Posted by user5728991, modified by community. See post 'Timeline' for change history
-	// Retrieved 2026-01-28, License - CC BY-SA 4.0
 	sort.Slice(output, func(i, j int) bool { return strings.ToLower(output[i]) < strings.ToLower(output[j]) })
 	return output
 }
@@ -51,13 +67,13 @@ func InitializeFolderSelector() FolderSelectorResult {
 	// if err != nil {
 	// 	fmt.Println("FATAL ERROR", err)
 	// }
-	// return FolderSelectorResult{Directory: startDir, Files: ListFoldersInDirectory(startDir)}
+	// return FolderSelectorResult{Directory: startDir, Files: ListFilesInDirectory(startDir)}
 	c := config.GetConfigValue(config.SharedDirectory)
 	if c != "" {
 		startDir = c
 	}
 
-	return FolderSelectorResult{Directory: startDir, Files: ListFoldersInDirectory(startDir)}
+	return FolderSelectorResult{Directory: startDir, Files: ListFilesInDirectory(startDir), Folders: ListFoldersInDirectory(startDir)}
 }
 
 // TODO: These functions (MoveUp, down, etc.) can probably be abstracted, or at least have some components abstracted to reduce repetition
@@ -76,7 +92,7 @@ func MoveUpDir(currentDir string) FolderSelectorResult {
 	// 	}
 	// }
 
-	output := FolderSelectorResult{Directory: newPath, Files: ListFoldersInDirectory(newPath)}
+	output := FolderSelectorResult{Directory: newPath, Files: ListFilesInDirectory(newPath), Folders: ListFoldersInDirectory(newPath)}
 	return output
 }
 
@@ -95,7 +111,7 @@ func MoveDownDir(currentDir string, newFolder string) FolderSelectorResult {
 	// 	}
 	// }
 
-	output := FolderSelectorResult{Directory: newPath, Files: ListFoldersInDirectory(newPath)}
+	output := FolderSelectorResult{Directory: newPath, Files: ListFilesInDirectory(newPath), Folders: ListFoldersInDirectory(newPath)}
 	return output
 }
 
@@ -104,7 +120,7 @@ func GoToHomeDir() FolderSelectorResult {
 	if err != nil {
 		fmt.Println("FATAL ERROR", err)
 	}
-	return FolderSelectorResult{Directory: startDir, Files: ListFoldersInDirectory(startDir)}
+	return FolderSelectorResult{Directory: startDir, Files: ListFilesInDirectory(startDir), Folders: ListFoldersInDirectory(startDir)}
 }
 
 // Once a folder is selected, it's saved to the config folder

@@ -33,6 +33,7 @@ func UploadFile(c *gin.Context) {
 	file, _ := c.FormFile("file")
 	log.Println("UPLOAD FILE RECEIVED: ", file.Filename)
 
+	// FIXME : make this save to the real shared dir
 	c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\" + file.Filename)
 	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 }

@@ -1,32 +1,48 @@
 <script lang="ts" setup>
-import AppLogo from "./components/AppLogo.vue";
 import FolderSelector from "./components/FolderSelector.vue";
 import PeerList from "./components/PeerList.vue";
+import SynkButton from "./components/SynkButton.vue";
 </script>
 
 <template>
   <!-- <img id="logo" alt="Wails logo" src="./assets/images/logo-universal.png" /> -->
-  <AppLogo />
+  <!-- <AppLogo /> -->
   <!-- <SetDirectory /> -->
   <!-- <SynkButton /> -->
   <div class="main-app">
     <div class="wrapper">
       <FolderSelector />
       <PeerList />
+      <SynkButton />
     </div>
   </div>
 </template>
 
 <style>
+* {
+  border: solid 1px red;
+}
+
+main {
+  width: 33.33%;
+  max-height: 580px;
+  margin: auto;
+}
 .main-app {
   display: flex;
   justify-content: space-around;
+  height: 100%;
+  max-width: 80%;
+  margin: auto;
 }
 
 .wrapper {
-  max-width: 80vw;
+  /* max-width: 80vw; */
+  height: 90%;
+  margin: auto;
   display: flex;
-  justify-content: space-around;
+  justify-content: space-evenly;
+  /* flex-grow: 0; */
 }
 
 #logo {
