@@ -186,8 +186,8 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 
 		}
 	}
-	
-	// Now, local folder structure should be synked with the remote computer. 
+
+	// Now, local folder structure should be synked with the remote computer.
 	// Next, tell the remote computer what folders it needs
 
 	//===============
@@ -253,14 +253,14 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 			log.Fatal("Error creating form file: ", err)
 		}
 
-		err = writer.WriteField("dir", f)
-		if err != nil {
-			log.Fatal("Error writing form field: ", err)
-		}
-
 		_, err = io.Copy(part, file_content)
 		if err != nil {
 			log.Fatal("Error copying file data: ", err)
+		}
+
+		err = writer.WriteField("dir", f)
+		if err != nil {
+			log.Fatal("Error writing form field: ", err)
 		}
 
 		err = writer.Close()
