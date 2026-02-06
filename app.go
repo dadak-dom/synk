@@ -41,8 +41,8 @@ func (a *App) startup(ctx context.Context) {
 
 	// FIXME: Consider setting up the API when starting a transfer, and then shutting it down when it's done
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:	[]string{"*"},
-		AllowMethods:	[]string{"GET", "POST"},
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST"},
 	}))
 
 	// Send information about the shared folder to the "active" peer
@@ -54,37 +54,27 @@ func (a *App) startup(ctx context.Context) {
 	// https://gin-gonic.com/en/docs/examples/upload-file/single-file/
 
 	// TODO: Add a check for a saved value for the shared directory
-	network.LANDiscovery()
-
-	// remove when done
-	// var TEMP_TEST_DIRECTORY = "test_shared_dir_local"
-	// var TEMP_TEST_DIRECTORY_REMOTE = "test_shared_dir_remote"
-	// var local_file_info = utils.ScanSharedDirectory(TEMP_TEST_DIRECTORY)
-	// var remote_file_info = utils.ScanSharedDirectory(TEMP_TEST_DIRECTORY_REMOTE)
-
-	// compareSharedDirectories(local_file_info, remote_file_info)
-
-
-	// runScan()
-	// fmt.Println("scan done?")
 
 }
 
-
+func (a *App) TestLANDiscovery() {
+	network.LANDiscovery()
+}
 
 // Take in the user's command
 // Return the new directory, as well as the contents of the directory
 // nextFolder : if a folder was selected to be entered, specify which one
-func (a *App) FolderSelectorControl (currentDir string, command folderselector.FolderSelectorCommand, nextFolder string) folderselector.FolderSelectorResult {
+func (a *App) FolderSelectorControl(currentDir string, command folderselector.FolderSelectorCommand, nextFolder string) folderselector.FolderSelectorResult {
 	var output folderselector.FolderSelectorResult
-	
+
 	switch command {
 	case folderselector.Init:
 		//TODO: Add a feature that makes the program remember the user's selection
 		output = folderselector.InitializeFolderSelector()
+		log.Println("test", output)
 		// selectedFolder = output.Directory
 	case folderselector.GoHome:
-		output = folderselector.GoToHomeDir()		
+		output = folderselector.GoToHomeDir()
 	case folderselector.MoveUp:
 		output = folderselector.MoveUpDir(currentDir)
 		// selectedFolder = output.Directory
@@ -174,7 +164,7 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		// fmt.Println("Send file: ", f, " with index: ", utils.IndexOf(, f))
 		// fileIndex := utils.IndexOf(remote_names, f)
 		// resp, err := http.Get(connection + "/getFile?index=" + strconv.Itoa(fileIndex))
-		
+
 		// get file that needs to be uploaded to peer
 		// FIXME: The line below is correct. Uncomment once done prototyping
 		// file_content, errReading := os.Open(config.ConstructCompleteFilePath(f))
@@ -224,7 +214,7 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		// values := map[string]io.Reader{
 		// 	"file": file_content,
 		// }
-		
+
 		// log.Println("file_content: ", file_content)
 		// FIXME there is a bug somewhere here. The API has been verified to work via curl
 		// for key, r := range values {

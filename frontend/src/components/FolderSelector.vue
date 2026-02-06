@@ -100,6 +100,7 @@ function handleShowHidden() {
 
 function chooseNewDir() {
   enableSelector.value = true;
+  console.debug("chooseNewDir event fired...");
   setTimeout(() => (modalOpacity.value = "1"), 300);
   // console.log(modal.value);
 
@@ -113,6 +114,7 @@ function handleOnlyFolders() {}
 
 onMounted(() => {
   FolderSelectorControl("", FolderSelectorCommands.INIT, "").then((value) => {
+    console.debug("Running FolderSelectorInit...")
     currentDir.value = value.Directory;
     foldersInCurrentDir.value = value.Folders;
     filesInCurrentDir.value = value.Files;
@@ -123,15 +125,12 @@ onMounted(() => {
     //   modal.value.style.transition = "opacity 1s";
     // }
     console.log(foldersInCurrentDir.value);
-    if (currentDir.value == "") {
-      enableSelector.value = true;
-    }
   });
 });
 </script>
 
 <template>
-  <main ref="modal" class="folder-selector-modal" v-show="enableSelector">
+  <main class="folder-selector-modal" v-show="enableSelector">
     <div class="modal-wrapper">
       <div class="options-and-current-dir">
         <p class="current-directory">{{ currentDir }}</p>

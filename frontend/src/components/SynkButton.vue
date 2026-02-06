@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { GetPeerList } from "../../wailsjs/go/main/App";
 import { RunSynkOnPeer } from "../../wailsjs/go/main/App";
+import { TestLANDiscovery } from "../../wailsjs/go/main/App";
 
 // TODO: This is how I could get the file information from a remote peer.
 async function test() {
@@ -13,12 +14,17 @@ async function test() {
     RunSynkOnPeer("http://" + p, sharedFolderContents);
   });
 }
+
+function testLan() {
+  TestLANDiscovery()
+}
 </script>
 
 <template>
   <main>
     <div>
-      <img @click="test" src="../assets/images/sink.png" />
+      <!-- <img @click="test" src="../assets/images/sink.png" /> -->
+       <img @click="testLan" src="../assets/images/sink.png" />
       <h1 id="app-name">"Synk"</h1>
     </div>
   </main>

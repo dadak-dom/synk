@@ -17,3 +17,7 @@ export function Greet(arg1) {
 export function RunSynkOnPeer(arg1, arg2) {
   return window['go']['main']['App']['RunSynkOnPeer'](arg1, arg2);
 }
+
+export function TestLANDiscovery() {
+  return window['go']['main']['App']['TestLANDiscovery']();
+}

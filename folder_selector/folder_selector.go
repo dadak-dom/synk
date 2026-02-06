@@ -2,6 +2,7 @@ package folderselector
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -21,8 +22,8 @@ const (
 
 type FolderSelectorResult struct {
 	Directory string
-	Files []string
-	Folders []string
+	Files     []string
+	Folders   []string
 }
 
 func ListFilesInDirectory(dir string) []string {
@@ -62,18 +63,15 @@ func ListFoldersInDirectory(dir string) []string {
 }
 
 func InitializeFolderSelector() FolderSelectorResult {
-	// startDir, err := os.UserHomeDir()
-	startDir := ""
-	// if err != nil {
-	// 	fmt.Println("FATAL ERROR", err)
-	// }
-	// return FolderSelectorResult{Directory: startDir, Files: ListFilesInDirectory(startDir)}
 	c := config.GetConfigValue(config.SharedDirectory)
-	if c != "" {
-		startDir = c
+	d, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal("Error initializing folder selector: ", err)
 	}
+	c = d
+	log.Println("Shared directory set to: ", c)
 
-	return FolderSelectorResult{Directory: startDir, Files: ListFilesInDirectory(startDir), Folders: ListFoldersInDirectory(startDir)}
+	return FolderSelectorResult{Directory: c, Files: ListFilesInDirectory(c), Folders: ListFoldersInDirectory(c)}
 }
 
 // TODO: These functions (MoveUp, down, etc.) can probably be abstracted, or at least have some components abstracted to reduce repetition

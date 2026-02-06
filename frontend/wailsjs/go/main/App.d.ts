@@ -10,3 +10,5 @@ export function GetPeerList():Promise<Array<string>>;
 export function Greet(arg1:string):Promise<string>;
 
 export function RunSynkOnPeer(arg1:string,arg2:Record<string, time.Time>):Promise<void>;
+
+export function TestLANDiscovery():Promise<void>;

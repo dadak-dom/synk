@@ -34,7 +34,7 @@ func UploadFile(c *gin.Context) {
 	log.Println("UPLOAD FILE RECEIVED: ", file.Filename)
 
 	// FIXME : make this save to the real shared dir
-	c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\" + file.Filename)
+	c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\"+file.Filename)
 	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 }
 
@@ -55,6 +55,7 @@ func GetFile(c *gin.Context) {
 
 // TODO : test to make sure that this works once I get home
 func LANDiscovery() {
+	log.Println("Running test of LAN Discovery...")
 	// discover peers
 	discoveries, err := peerdiscovery.Discover(peerdiscovery.Settings{
 		Limit:     -1,
