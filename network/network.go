@@ -7,7 +7,10 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"path/filepath"
+	"runtime"
 	"strconv"
+	"strings"
 	"synk/config"
 	"synk/utils"
 	"time"
@@ -22,6 +25,7 @@ import (
 // }
 
 // GetLocalIP returns the non loopback local IP of the host
+// need to find an IP that is on the same subnet as peers
 func GetLocalIP() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -31,10 +35,15 @@ func GetLocalIP() string {
 		// check the address type and if it is not a loopback the display it
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
+				// if on Windows, don't use 192.168.56.X, as that will give the wrong IP for the API
+				if runtime.GOOS == "windows" && !strings.Contains(ipnet.IP.To4().String(), "192.168.0") { // FIXME: This is a bandaid solution. 
+					continue
+				}
 				return ipnet.IP.String()
 			}
 		}
 	}
+	// return "192.168.0.238"
 	return ""
 }
 
@@ -55,7 +64,8 @@ func UploadFile(c *gin.Context) {
 	// FIXME : make this save to the real shared dir
 	// c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\"+file.Filename)
 	// c.SaveUploadedFile(file, "/home/dominik/synk/test_shared_dir_remote"+file.Filename)
-	c.SaveUploadedFile(file, config.ConstructCompleteFilePath(file.Filename))
+	log.Println("SAVING TO: ", filepath.Join(config.GetConfigValue(config.SharedDirectory), config.ConstructCompleteFilePath(file.Filename)))
+	c.SaveUploadedFile(file, filepath.Join(config.GetConfigValue(config.SharedDirectory), config.ConstructCompleteFilePath(file.Filename)))
 	// c.SaveUploadedFile(file, config.GetConfigValue())
 	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 }
