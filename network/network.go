@@ -67,8 +67,8 @@ func UploadFile(c *gin.Context) {
 	// FIXME : make this save to the real shared dir
 	// c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\"+file.Filename)
 	// c.SaveUploadedFile(file, "/home/dominik/synk/test_shared_dir_remote"+file.Filename)
-	log.Println("SAVING TO: ", filepath.Join(config.GetConfigValue(config.SharedDirectory), config.ConstructCompleteFilePath(file.Filename)))
-	c.SaveUploadedFile(file, filepath.Join(config.GetConfigValue(config.SharedDirectory), config.ConstructCompleteFilePath(file.Filename)))
+	log.Println("SAVING TO: ", config.ConstructCompleteFilePath(dir))
+	c.SaveUploadedFile(file, config.ConstructCompleteFilePath(dir))
 	// c.SaveUploadedFile(file, config.GetConfigValue())
 	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 }
