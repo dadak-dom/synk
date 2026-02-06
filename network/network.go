@@ -39,8 +39,8 @@ func GetLocalIP() string {
 }
 
 func GetSharedFolderInfo(c *gin.Context) {
-	// sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValue(config.SharedDirectory))
-	sharedDirectoryInfo := utils.ScanSharedDirectory("/home/dominik/synk/test_shared_dir_remote")
+	sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValue(config.SharedDirectory))
+	// sharedDirectoryInfo := utils.ScanSharedDirectory("/home/dominik/synk/test_shared_dir_remote")
 	// names, data := utils.ConvertSharedDirectoryMapToLists(sharedDirectoryInfo)
 	// fmt.Println("TESTING SORT:")
 	// fmt.Println("\tNAMES: ", names)
