@@ -7,12 +7,12 @@ import { TestLANDiscovery } from "../../wailsjs/go/main/App";
 async function synk() {
   const peers = await GetPeerList();
   peers.forEach(async (p) => {
-    let url = "http://" + p + "/getSharedFolder";
+    let url = "http://" + p + ":8080/getSharedFolder";
     let response = await fetch(url);
     let sharedFolderContents = await response.json();
     console.log(sharedFolderContents);
-    return 
-    RunSynkOnPeer("http://" + p, sharedFolderContents);
+    // return 
+    RunSynkOnPeer("http://" + p + ":8080", sharedFolderContents);
   });
 }
 

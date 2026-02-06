@@ -36,9 +36,29 @@ var selectedFolder, err = os.UserHomeDir()
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
+	// msg := <-peers
+	// log.Println("PEERS:", msg)
+
+	// log.Fatal("DONE")
 	a.ctx = ctx
 	router := gin.Default()
 	// router.SetTrustedProxies([]string{})
+	updates := make(chan []string)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			updates <- network.LANDiscovery()
+		}
+	}()
+
+	go func() {
+		for peers := range updates {
+			log.Println("Updated peers:", peers)
+		}
+	}()
 
 	// FIXME: Consider setting up the API when starting a transfer, and then shutting it down when it's done
 	router.Use(cors.New(cors.Config{
@@ -165,7 +185,7 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		log.Println("File ", filepath.Join("/home/dominik/synk/test_shared_dir_local", filepath.Base(f)), " written successfully.")
 		// os.WriteFile(filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), body, 0644)
 	}
-	log.Fatal("DONE")
+	// log.Fatal("DONE")
 
 	log.Println("===========================\nRECEIVING DONE, NOW SENDING\n==========================")
 	log.Println("Files to send: ", filesToSend)

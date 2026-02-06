@@ -32,6 +32,8 @@ FIXME:
 
 - Make it so that the shared folder is the default when opening the folder selector
 - For the time being, folders don't work. Will need to implement some sort of check that creates a subdirectory if it doesn't already exist
+- There is a bug (on windows) where the selected local IP for the http server is on a different subnet. Will need to make it so that the API is only launched once a connection has been made via multicast
+- Will need to make it so that the program is always listening for new peers in the background. Will have to rejigger the logic a little bit
 
 NOTES:
 
