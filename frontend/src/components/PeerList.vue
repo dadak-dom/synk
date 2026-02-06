@@ -18,8 +18,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <main><p>Peer list goes here</p>
-  <div v-for="peer in peers"><p>{{ peer }}</p></div>
+  <main>
   </main>
 </template>
 
