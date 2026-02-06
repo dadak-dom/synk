@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"synk/config"
 	folderselector "synk/folder_selector"
 	"synk/network"
@@ -148,8 +149,8 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 
 	// compare the shared directories
 	// FIXME: The code below this comment is correct. Uncomment once peer discovery works
-	// local_shared_folder := config.GetConfigValue(config.SharedDirectory)
-	local_shared_folder := "test_shared_dir_local"
+	local_shared_folder := config.GetConfigValue(config.SharedDirectory)
+	// local_shared_folder := "test_shared_dir_local"
 	comparison := utils.CompareSharedDirectories(utils.ScanSharedDirectory(local_shared_folder), peerFileInfo)
 	filesToSend, filesToReceive := comparison["SEND"], comparison["RECEIVE"]
 	fmt.Println("Files to send: ", filesToSend)
@@ -160,6 +161,36 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 	log.Println(utils.DirMapToString(peerFileInfo))
 	log.Println("===========================================")
 
+	// Before downloading/sending anything, make sure that both computers have the necessary folders
+	// Use peerFileInfo to extract any directories you need locally, and send directories the remote computer needs to add
+	// ==============
+	peerFolders := make([]string, 0)
+	for f := range peerFileInfo {
+		// log.Println(config.ConstructCompleteFilePath(f))
+		temp := strings.Replace(f, "SYNK_ROOT_DIRECTORY/", "", 1)
+		s := strings.Split(temp, "/")
+		if len(s) > 1 {
+			peerFolders = append(peerFolders, filepath.Dir(temp)) // if there is a folder in the filename, add it to the list
+		}
+		log.Println(temp)
+	}
+	log.Println("Peerfolders: ", peerFolders)
+	for _, f := range peerFolders {
+		temp := config.ConstructCompleteFilePath("SYNK_ROOT_DIRECTORY/" + f)
+		_, err := os.Stat(temp)
+		if err != nil { // if the folder doesn't exist, create it
+			// log.Println("HERE!", err.Error())
+			if err := os.MkdirAll(temp, os.ModePerm); err != nil {
+				log.Fatal("Error creating new directories: ", err)
+			}
+
+		}
+	}
+	
+	// Now, local folder structure should be synked with the remote computer. 
+	// Next, tell the remote computer what folders it needs
+
+	//===============
 	// download the files
 	// how this works: since this computer (the "active" one) has already received information re: remote files via
 	// 	peerFileInfo, convert peerFileInfo into a list and ask for the index of the file you need.
@@ -220,6 +251,11 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		part, err := writer.CreateFormFile("file", filepath.Base(f))
 		if err != nil {
 			log.Fatal("Error creating form file: ", err)
+		}
+
+		err = writer.WriteField("dir", f)
+		if err != nil {
+			log.Fatal("Error writing form field: ", err)
 		}
 
 		_, err = io.Copy(part, file_content)

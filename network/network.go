@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -49,17 +50,19 @@ func GetLocalIP() string {
 
 func GetSharedFolderInfo(c *gin.Context) {
 	sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValue(config.SharedDirectory))
-	// sharedDirectoryInfo := utils.ScanSharedDirectory("/home/dominik/synk/test_shared_dir_remote")
-	// names, data := utils.ConvertSharedDirectoryMapToLists(sharedDirectoryInfo)
-	// fmt.Println("TESTING SORT:")
-	// fmt.Println("\tNAMES: ", names)
-	// fmt.Println("\tDATA: ", data)
 	c.IndentedJSON(http.StatusOK, sharedDirectoryInfo)
 }
 
 func UploadFile(c *gin.Context) {
 	file, _ := c.FormFile("file")
-	log.Println("UPLOAD FILE RECEIVED: ", file.Filename)
+	dir := c.PostForm("dir")
+	// check if the folder exists - if not, create it
+	temp := filepath.Dir(config.ConstructCompleteFilePath(dir))
+	if _, err := os.Stat(temp); err != nil {
+		log.Println("Directory missing, creating now...", temp)
+		os.MkdirAll(temp, os.ModePerm)
+	}
+	log.Println("UPLOAD FILE RECEIVED: ", file.Filename, " IN DIRECTORY: ", dir)
 
 	// FIXME : make this save to the real shared dir
 	// c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\"+file.Filename)
