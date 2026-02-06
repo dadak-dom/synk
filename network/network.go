@@ -5,6 +5,7 @@ package network
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"synk/config"
@@ -20,8 +21,26 @@ import (
 
 // }
 
+// GetLocalIP returns the non loopback local IP of the host
+func GetLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
+}
+
 func GetSharedFolderInfo(c *gin.Context) {
-	sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValue(config.SharedDirectory))
+	// sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValue(config.SharedDirectory))
+	sharedDirectoryInfo := utils.ScanSharedDirectory("/home/dominik/synk/test_shared_dir_remote")
 	// names, data := utils.ConvertSharedDirectoryMapToLists(sharedDirectoryInfo)
 	// fmt.Println("TESTING SORT:")
 	// fmt.Println("\tNAMES: ", names)
@@ -34,7 +53,10 @@ func UploadFile(c *gin.Context) {
 	log.Println("UPLOAD FILE RECEIVED: ", file.Filename)
 
 	// FIXME : make this save to the real shared dir
-	c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\"+file.Filename)
+	// c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\"+file.Filename)
+	// c.SaveUploadedFile(file, "/home/dominik/synk/test_shared_dir_remote"+file.Filename)
+	c.SaveUploadedFile(file, config.ConstructCompleteFilePath(file.Filename))
+	// c.SaveUploadedFile(file, config.GetConfigValue())
 	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 }
 
@@ -54,18 +76,20 @@ func GetFile(c *gin.Context) {
 }
 
 // TODO : test to make sure that this works once I get home
-func LANDiscovery() {
+func LANDiscovery() []string {
 	log.Println("Running test of LAN Discovery...")
+	peers := make([]string, 0)
 	// discover peers
 	discoveries, err := peerdiscovery.Discover(peerdiscovery.Settings{
 		Limit:     -1,
 		Payload:   []byte("test"),
 		Delay:     100 * time.Millisecond,
-		TimeLimit: 30 * time.Second,
+		TimeLimit: 3 * time.Second,
 		Notify: func(d peerdiscovery.Discovered) {
 			log.Println(d)
+
 		},
-		MulticastAddress: "239.255.255.250",
+		MulticastAddress: "224.0.0.2",
 	})
 
 	// print out results
@@ -76,9 +100,11 @@ func LANDiscovery() {
 			fmt.Printf("Found %d other computers\n", len(discoveries))
 			for i, d := range discoveries {
 				fmt.Printf("%d) '%s' with payload '%s'\n", i, d.Address, d.Payload)
+				peers = append(peers, d.Address)
 			}
 		} else {
 			fmt.Println("Found no devices. You need to run this on another computer at the same time.")
 		}
 	}
+	return peers
 }

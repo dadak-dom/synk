@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"synk/config"
 	folderselector "synk/folder_selector"
 	"synk/network"
 	"synk/utils"
@@ -45,11 +46,18 @@ func (a *App) startup(ctx context.Context) {
 		AllowMethods: []string{"GET", "POST"},
 	}))
 
+	log.Println("LOCAL IP INFO: ", network.GetLocalIP())
+	myLocalIP := network.GetLocalIP()
+	APIport := ":8080"
+	if myLocalIP == "" {
+		log.Fatal("Error: could not find local IP address (192.168 address)")
+	}
+
 	// Send information about the shared folder to the "active" peer
 	router.GET("/getSharedFolder", network.GetSharedFolderInfo)
 	router.GET("/getFile", network.GetFile)
 	router.POST("/uploadFile", network.UploadFile)
-	router.Run("localhost:8080")
+	router.Run(myLocalIP + APIport)
 	// TODO: Use the following guide to figure out how to send files back and forth:
 	// https://gin-gonic.com/en/docs/examples/upload-file/single-file/
 
@@ -100,7 +108,8 @@ func (a *App) Greet(name string) string {
 func (a *App) GetPeerList() []string {
 	// TODO: Actually implement this. Will probably need some global
 	// variable that tracks what devices we're connected with
-	return []string{"localhost:8080"}
+	// return []string{"192.168.0.235:8080"}
+	return network.LANDiscovery()
 }
 
 func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time) {
@@ -146,16 +155,17 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		// FIXME: actually save the file to the shared directory
 		// will need to copy files to temp folder, complete operation, then delete the temp folder
 		// FIXME: For now, just save the file to the test directory
-		fmt.Println("Trying to write to: ", filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)))
-		errWrite := os.WriteFile(filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), body, 0644)
+		fmt.Println("Trying to write to: ", config.ConstructCompleteFilePath(f))
+		errWrite := os.WriteFile(config.ConstructCompleteFilePath(f), body, 0644)
 		if errWrite != nil {
 
 			fmt.Println("Error when writing:")
 			log.Fatal(errWrite)
 		}
-		log.Println("File ", filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), " written successfully.")
+		log.Println("File ", filepath.Join("/home/dominik/synk/test_shared_dir_local", filepath.Base(f)), " written successfully.")
 		// os.WriteFile(filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), body, 0644)
 	}
+	log.Fatal("DONE")
 
 	log.Println("===========================\nRECEIVING DONE, NOW SENDING\n==========================")
 	log.Println("Files to send: ", filesToSend)

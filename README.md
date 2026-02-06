@@ -27,3 +27,12 @@ TODO:
   - Make sure that the library works when used on the same LAN network
 - File sharing
   - code up the file sending / receiving logic
+
+FIXME:
+
+- Make it so that the shared folder is the default when opening the folder selector
+- For the time being, folders don't work. Will need to implement some sort of check that creates a subdirectory if it doesn't already exist
+
+NOTES:
+
+- For some reason, the multicasting only works between windows/linux when I change the multicast address (e.g. from 224.0.0.0 to 224.0.0.1)
