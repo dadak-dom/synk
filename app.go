@@ -33,6 +33,13 @@ func NewApp() *App {
 
 var selectedFolder, err = os.UserHomeDir()
 
+var peerList = make([]string, 0)
+
+func updatePeerList(p []string) {
+	log.Println("Updating peer list: ", p)
+	peerList = p
+}
+
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
@@ -57,6 +64,7 @@ func (a *App) startup(ctx context.Context) {
 	go func() {
 		for peers := range updates {
 			log.Println("Updated peers:", peers)
+			updatePeerList(peers)
 		}
 	}()
 
@@ -129,7 +137,8 @@ func (a *App) GetPeerList() []string {
 	// TODO: Actually implement this. Will probably need some global
 	// variable that tracks what devices we're connected with
 	// return []string{"192.168.0.235:8080"}
-	return network.LANDiscovery()
+	// return network.LANDiscovery()
+	return peerList
 }
 
 func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time) {
@@ -182,7 +191,7 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 			fmt.Println("Error when writing:")
 			log.Fatal(errWrite)
 		}
-		log.Println("File ", filepath.Join("/home/dominik/synk/test_shared_dir_local", filepath.Base(f)), " written successfully.")
+		// log.Println("File ", filepath.Join("/home/dominik/synk/test_shared_dir_local", filepath.Base(f)), " written successfully.")
 		// os.WriteFile(filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), body, 0644)
 	}
 	// log.Fatal("DONE")
@@ -197,8 +206,8 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 
 		// get file that needs to be uploaded to peer
 		// FIXME: The line below is correct. Uncomment once done prototyping
-		// file_content, errReading := os.Open(config.ConstructCompleteFilePath(f))
-		file_content, errReading := os.Open(filepath.Join("test_shared_dir_local", filepath.Base(f)))
+		file_content, errReading := os.Open(config.ConstructCompleteFilePath(f))
+		// file_content, errReading := os.Open(filepath.Join("test_shared_dir_local", filepath.Base(f)))
 		if errReading != nil {
 			log.Fatal("Could not open file: ", errReading)
 		}

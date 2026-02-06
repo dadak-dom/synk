@@ -77,7 +77,7 @@ func GetFile(c *gin.Context) {
 
 // TODO : test to make sure that this works once I get home
 func LANDiscovery() []string {
-	log.Println("Running test of LAN Discovery...")
+	log.Println("Running LAN Discovery...")
 	peers := make([]string, 0)
 	// discover peers
 	discoveries, err := peerdiscovery.Discover(peerdiscovery.Settings{
@@ -86,7 +86,7 @@ func LANDiscovery() []string {
 		Delay:     100 * time.Millisecond,
 		TimeLimit: 3 * time.Second,
 		Notify: func(d peerdiscovery.Discovered) {
-			log.Println(d)
+			// log.Println(d)
 
 		},
 		MulticastAddress: "224.0.0.2",
