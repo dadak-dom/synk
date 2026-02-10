@@ -36,11 +36,16 @@ func GetLocalIP() string {
 		// check the address type and if it is not a loopback the display it
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
+				ip := ipnet.IP.To4().String()
+				log.Println("Potential IP: ", ip)
 				// if on Windows, don't use 192.168.56.X, as that will give the wrong IP for the API
-				if runtime.GOOS == "windows" && !strings.Contains(ipnet.IP.To4().String(), "192.168.0") { // FIXME: This is a bandaid solution. 
+				if runtime.GOOS == "windows" && ip == "192.168.56.1" { // FIXME: This is a bandaid solution. 
 					continue
 				}
-				return ipnet.IP.String()
+				if strings.HasPrefix(ip, "192.168") ||  strings.HasPrefix(ip, "172."){
+					return ip
+				}
+				// return ipnet.IP.String()
 			}
 		}
 	}
