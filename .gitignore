@@ -2,3 +2,6 @@ build/
 node_modules
 frontend/dist
 test_shared_dir_*/
+config/*.json
+config/*.txt
+upload_test
