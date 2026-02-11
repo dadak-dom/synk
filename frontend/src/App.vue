@@ -33,7 +33,7 @@ import { createMemoryHistory, createRouter, RouterLink } from "vue-router";
 
 <style>
 * {
-  border: solid 1px red;
+  /* border: solid 1px red; */
 }
 
 nav {

@@ -2,16 +2,18 @@
 import { onMounted, ref, useTemplateRef } from "vue";
 // import what I need from the backend...
 import { FolderSelectorControl } from "../../wailsjs/go/main/App";
+import FolderSelectorItems from "../components/FolderSelectorItems.vue";
 
 const enableSelector = ref(false);
 const currentDir = ref();
 const foldersInCurrentDir = ref<string[]>([]);
 const filesInCurrentDir = ref<string[]>([]);
 var rawFoldersInCurrentDir = <string[]>[];
+var rawFilesInCurrentDir = <string[]>[];
 
 // Options for viewing the file selector:
 const showHiddenFiles = ref(false);
-const onlyFolders = ref(false); // FIXME : should be named "showFiles", too tired to fix it now :(
+const showFiles = ref(false); // FIXME : should be named "showFiles", too tired to fix it now :(
 
 // Modal settings
 // const modal = useTemplateRef("modal");
@@ -35,7 +37,9 @@ function moveUpDir() {
     foldersInCurrentDir.value = value.Folders;
     rawFoldersInCurrentDir = foldersInCurrentDir.value;
     filesInCurrentDir.value = value.Files;
+    rawFilesInCurrentDir = value.Files;
     handleShowHidden();
+    handleShowFiles();
     console.log(foldersInCurrentDir.value);
   });
 }
@@ -50,7 +54,9 @@ function moveDownDir(f: string) {
     foldersInCurrentDir.value = value.Folders;
     rawFoldersInCurrentDir = foldersInCurrentDir.value;
     filesInCurrentDir.value = value.Files;
+    rawFilesInCurrentDir = value.Files;
     handleShowHidden();
+    handleShowFiles();
     console.log(foldersInCurrentDir.value);
   });
 }
@@ -61,8 +67,10 @@ function goHome() {
       currentDir.value = value.Directory;
       foldersInCurrentDir.value = value.Folders;
       rawFoldersInCurrentDir = foldersInCurrentDir.value;
+      rawFilesInCurrentDir = value.Files;
       filesInCurrentDir.value = value.Files;
       handleShowHidden();
+      handleShowFiles();
       console.log(foldersInCurrentDir.value);
     },
   );
@@ -99,6 +107,14 @@ function handleShowHidden() {
   }
 }
 
+function handleShowFiles() {
+  if (showFiles.value) {
+    filesInCurrentDir.value = rawFilesInCurrentDir;
+  } else {
+    filesInCurrentDir.value = [];
+  }
+}
+
 function chooseNewDir() {
   enableSelector.value = true;
   console.debug("chooseNewDir event fired...");
@@ -111,7 +127,9 @@ onMounted(() => {
     currentDir.value = value.Directory;
     foldersInCurrentDir.value = value.Folders;
     filesInCurrentDir.value = value.Files;
+    rawFilesInCurrentDir = value.Files;
     handleShowHidden();
+    handleShowFiles();
     console.log(foldersInCurrentDir.value);
   });
 });
@@ -136,29 +154,11 @@ const showFolderButton = ref<boolean>(true);
     <Transition name="slide-fade">
       <div class="folder-selector-box" v-if="openFolderSelector">
         <div class="folder-selection-box">
-          <Transition name="slide-fade">
-            <div
-              v-if="
-                foldersInCurrentDir == undefined ||
-                foldersInCurrentDir.length > 0
-              "
-              v-for="folder in foldersInCurrentDir"
-            >
-              <button class="folder-button" @click="moveDownDir(folder)">
-                <img class="folder-image" src="../assets/images/folder.png" />
-                <div class="folder-text">
-                  {{ folder }}
-                </div>
-              </button>
-            </div>
-          </Transition>
-          <div v-if="onlyFolders" v-for="file in filesInCurrentDir">
-            <button class="folder-button">
-              <div class="folder-text">
-                {{ file }}
-              </div>
-            </button>
-          </div>
+          <FolderSelectorItems
+            :folders="foldersInCurrentDir"
+            :files="filesInCurrentDir"
+            @move-down-dir="moveDownDir"
+          />
         </div>
         <div class="nav-button-group">
           <button class="nav-button" @click="cancelFolderSelectTransition">
@@ -190,8 +190,9 @@ const showFolderButton = ref<boolean>(true);
               <label class="switch">
                 <input
                   type="checkbox"
-                  v-bind:checked="onlyFolders"
-                  v-model="onlyFolders"
+                  v-bind:checked="showFiles"
+                  v-model="showFiles"
+                  @change="handleShowFiles"
                 />
                 <span class="slider round"></span>
               </label>
@@ -281,17 +282,6 @@ const showFolderButton = ref<boolean>(true);
   overflow-y: scroll;
   overflow-x: hidden;
   /* width: 20vw; */
-
-  .folder-button {
-    width: 100%;
-    display: flex;
-    justify-content: left;
-    gap: 5px;
-
-    .folder-image {
-      width: 10%;
-    }
-  }
 }
 
 .no-folders {
