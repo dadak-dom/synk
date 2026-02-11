@@ -28,15 +28,4 @@ function folderClick(folder: string) {
   </main>
 </template>
 
-<style scoped>
-.folder-button {
-  width: 100%;
-  display: flex;
-  justify-content: left;
-  gap: 5px;
-
-  .folder-image {
-    width: 10%;
-  }
-}
-</style>
+<style scoped></style>

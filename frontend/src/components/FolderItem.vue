@@ -43,10 +43,10 @@ onUpdated(() => {
   display: flex;
   justify-content: left;
   gap: 5px;
+}
 
-  .folder-image {
-    width: 10%;
-  }
+.folder-image {
+  width: 10%;
 }
 
 .slide-fade-enter-active {

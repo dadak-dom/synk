@@ -207,10 +207,10 @@ const showFolderButton = ref<boolean>(true);
 <style scoped>
 .folder-selection-view {
   height: 86%;
+}
 
-  .folder-selector-box {
-    height: 100%;
-  }
+.folder-selector-box {
+  height: 100%;
 }
 
 .slide-fade-enter-active {
@@ -238,34 +238,27 @@ const showFolderButton = ref<boolean>(true);
   width: 80vw;
 }
 
-.options-and-current-dir {
-  /* width: 40vw; */
+.options-and-current-dir .options-wrapper {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  background-color: lightgrey;
+}
 
-  .options-wrapper {
-    display: grid;
-    grid-template-columns: auto auto auto;
-    background-color: lightgrey;
-    .option {
-      /* background-color: #aeb3ba; */
-      color: black;
-    }
-  }
+.options-and-current-dir .option {
+  color: black;
+}
 
-  .current-directory {
-    color: black;
-    border: solid black 2px;
-    padding: 10px;
-    background-color: lightgrey;
-  }
+.current-directory {
+  color: black;
+  border: solid black 2px;
+  padding: 10px;
+  background-color: lightgrey;
 }
 
 .nav-button-group {
   display: flex;
   justify-content: center;
   flex-direction: row;
-  /* height: 100%; */
-  /* width: 150px; */
-  /* gap: 10px; */
 
   .nav-button {
     background-color: lightgrey;
@@ -276,12 +269,9 @@ const showFolderButton = ref<boolean>(true);
 
 .folder-selection-box {
   display: list-item;
-  /* grid-template-columns: auto auto auto; */
-  /* max-height: 30vh; */
   height: 30vh;
   overflow-y: scroll;
   overflow-x: hidden;
-  /* width: 20vw; */
 }
 
 .no-folders {

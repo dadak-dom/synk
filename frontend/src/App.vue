@@ -3,18 +3,6 @@ import { createMemoryHistory, createRouter, RouterLink } from "vue-router";
 </script>
 
 <template>
-  <!-- <img id="logo" alt="Wails logo" src="./assets/images/logo-universal.png" /> -->
-  <!-- <AppLogo /> -->
-  <!-- <SetDirectory /> -->
-  <!-- <SynkButton /> -->
-  <!-- <div class="main-app">
-    <div class="wrapper">
-      <FolderSelector />
-      <PeerList />
-      <SynkButton />
-    </div>
-  </div> -->
-  <!-- <p>Current path: {{ $route.fullPath }}</p> -->
   <nav>
     <RouterLink to="/">Go Home</RouterLink>
     <RouterLink to="/folder"
@@ -49,11 +37,6 @@ nav {
   opacity: 0;
 }
 
-/* main {
-  width: 33.33%;
-  max-height: 580px;
-  margin: auto;
-} */
 .main-app {
   display: flex;
   justify-content: space-around;
