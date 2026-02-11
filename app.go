@@ -94,6 +94,10 @@ func (a *App) startup(ctx context.Context) {
 
 }
 
+func (a *App) GetLocalIP() string {
+	return network.GetLocalIP()
+}
+
 func (a *App) TestLANDiscovery() {
 	network.LANDiscovery()
 }
@@ -108,7 +112,6 @@ func (a *App) FolderSelectorControl(currentDir string, command folderselector.Fo
 	case folderselector.Init:
 		//TODO: Add a feature that makes the program remember the user's selection
 		output = folderselector.InitializeFolderSelector()
-		log.Println("test", output)
 		// selectedFolder = output.Directory
 	case folderselector.GoHome:
 		output = folderselector.GoToHomeDir()

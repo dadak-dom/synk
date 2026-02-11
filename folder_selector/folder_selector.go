@@ -67,10 +67,9 @@ func InitializeFolderSelector() FolderSelectorResult {
 	d, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal("Error initializing folder selector: ", err)
+		c = d
 	}
-	c = d
 	log.Println("Shared directory set to: ", c)
-
 	return FolderSelectorResult{Directory: c, Files: ListFilesInDirectory(c), Folders: ListFoldersInDirectory(c)}
 }
 

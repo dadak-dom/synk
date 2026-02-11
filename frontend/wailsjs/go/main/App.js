@@ -6,6 +6,10 @@ export function FolderSelectorControl(arg1, arg2, arg3) {
   return window['go']['main']['App']['FolderSelectorControl'](arg1, arg2, arg3);
 }
 
+export function GetLocalIP() {
+  return window['go']['main']['App']['GetLocalIP']();
+}
+
 export function GetPeerList() {
   return window['go']['main']['App']['GetPeerList']();
 }

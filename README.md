@@ -20,8 +20,33 @@ To build a redistributable, production mode package, use `wails build`.
 
 TODO:
 
+FRONTEND:
+
+NOW:
+
+- Finish the PeerList and SynkButton parts of the Mainview
+- Display the user's local IP
+- In the main view, create a subcomponent that can list the files that are currently in the shared folder (\*) - ideally in like a drop-down menu
+
+LATER:
+
+- Make the navbar pretty.
+- Overall, think of a cohesive aesthetic to create for the app, and then make the assets for it
+- Expanding on (\*): show a comparison of the files on the local vs. on the remote machine before doing the synk (as a sort of confirmation).
+  Would need to create a graphical rendering of the filesystem (nested folders, etc.)
+
+BACKEND:
+NOW:
+
+- Generate a random string of words or numbers on startup. Use the FRONTEND to confirm that you want to synk with the computer with that ID
+- only launch the API when actually running a synk. (Less drastic measure: toggle the API to off when not synking.)
+
+LATER (LONG TERM):
+
+- Find a way to allow users to automatically synk so long as both computers are on
+- Find a way to "remember" other devices and automatically synk with them
+
 - Folder Selector:
-  - Add an option to hide hidden folders
   - make it prettier
 - Multicast
   - Make sure that the library works when used on the same LAN network

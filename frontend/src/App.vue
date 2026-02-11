@@ -1,7 +1,5 @@
 <script lang="ts" setup>
-import FolderSelector from "./components/FolderSelector.vue";
-import PeerList from "./components/PeerList.vue";
-import SynkButton from "./components/SynkButton.vue";
+import { createMemoryHistory, createRouter, RouterLink } from "vue-router";
 </script>
 
 <template>
@@ -9,13 +7,28 @@ import SynkButton from "./components/SynkButton.vue";
   <!-- <AppLogo /> -->
   <!-- <SetDirectory /> -->
   <!-- <SynkButton /> -->
-  <div class="main-app">
+  <!-- <div class="main-app">
     <div class="wrapper">
       <FolderSelector />
       <PeerList />
       <SynkButton />
     </div>
-  </div>
+  </div> -->
+  <!-- <p>Current path: {{ $route.fullPath }}</p> -->
+  <nav>
+    <RouterLink to="/">Go Home</RouterLink>
+    <RouterLink to="/folder"
+      ><img src="./assets/images/folder.png"
+    /></RouterLink>
+    <RouterLink to="/about">Go to About</RouterLink>
+    <RouterLink to="/settings">settings</RouterLink>
+  </nav>
+  <!-- <RouterView /> -->
+  <router-view v-slot="{ Component }">
+    <transition name="fade" mode="out-in">
+      <component :is="Component" :key="$route.path"></component>
+    </transition>
+  </router-view>
 </template>
 
 <style>
@@ -23,11 +36,24 @@ import SynkButton from "./components/SynkButton.vue";
   border: solid 1px red;
 }
 
-main {
+nav {
+  /* height: 10%; */
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease-in-out;
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* main {
   width: 33.33%;
   max-height: 580px;
   margin: auto;
-}
+} */
 .main-app {
   display: flex;
   justify-content: space-around;

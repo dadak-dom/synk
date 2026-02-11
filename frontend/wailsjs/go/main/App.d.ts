@@ -5,6 +5,8 @@ import {time} from '../models';
 
 export function FolderSelectorControl(arg1:string,arg2:folderselector.FolderSelectorCommand,arg3:string):Promise<folderselector.FolderSelectorResult>;
 
+export function GetLocalIP():Promise<string>;
+
 export function GetPeerList():Promise<Array<string>>;
 
 export function Greet(arg1:string):Promise<string>;

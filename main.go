@@ -18,8 +18,9 @@ func main() {
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "synk",
-		Width:  1024,
-		Height: 400,
+		Width:  400,
+		Height: 600,
+		DisableResize: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
