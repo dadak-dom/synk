@@ -24,6 +24,7 @@ FRONTEND:
 
 NOW:
 
+- Add a notification when the synk finishes!
 - Finish the PeerList and SynkButton parts of the Mainview
 - Display the user's local IP
 - In the main view, create a subcomponent that can list the files that are currently in the shared folder (\*) - ideally in like a drop-down menu

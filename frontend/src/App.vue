@@ -71,6 +71,17 @@ nav {
   gap: 10px;
   margin-top: 10px;
   margin-left: 10px;
+  /* background-color: rgba(30, 30, 30, 0.4); */
+  background: linear-gradient(
+    180deg,
+    rgba(148, 148, 148, 0.9) 0,
+    rgba(7, 7, 7, 0.93) 20%,
+    rgba(19, 19, 19, 0.9) 40%,
+    rgba(105, 102, 102, 0.93) 100%
+  );
+  border: solid 1px grey;
+  border-radius: 10px;
+  padding: 5px;
 }
 
 nav .nav-item img {

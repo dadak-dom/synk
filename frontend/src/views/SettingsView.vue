@@ -11,10 +11,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="settings">
-    <h1>Settings</h1>
-    <p>My private IP: {{ myPrivateIP }}</p>
-  </div>
+  <main>
+    <div class="title">
+      <h1>Settings</h1>
+    </div>
+    <div class="settings">
+      <p>My private IP: {{ myPrivateIP }}</p>
+    </div>
+  </main>
 </template>
 
 <style scoped>

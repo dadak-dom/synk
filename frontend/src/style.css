@@ -10,6 +10,19 @@ html {
   background-color: black;
 }
 
+@font-face {
+  font-family: "FrutigerAero";
+  src: url("./assets/fonts/AerobicsRegular.ttf") format("truetype");
+}
+
+h1 {
+  font-family: "FrutigerAero";
+}
+
+.title {
+  border: outset 1px white;
+}
+
 body {
   margin: 0;
   color: white;

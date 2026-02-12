@@ -2,6 +2,7 @@
 import { GetPeerList } from "../../wailsjs/go/main/App";
 import { RunSynkOnPeer } from "../../wailsjs/go/main/App";
 import { onMounted, ref } from "vue";
+import { RouterLink } from "vue-router";
 
 // TODO: This is how I could get the file information from a remote peer.
 async function synk() {
@@ -16,7 +17,7 @@ async function synk() {
   });
 }
 
-const peers = ref<string[]>([]);
+const peers = ref<string[] | null>(null);
 const selectedPeers = ref<string[]>([]);
 
 async function updatePeerList() {
@@ -27,23 +28,38 @@ async function updatePeerList() {
 
 onMounted(() => {
   console.log("Mounted peerlist");
-  setInterval(updatePeerList, 500);
+  setInterval(updatePeerList, 3000);
 });
 </script>
 
 <template>
   <main>
     <div class="main-view-wrapper">
-      <h1 id="logo">Synk</h1>
-      <p>Peer list goes here</p>
-      <input
-        v-model="selectedPeers"
-        v-for="peer in peers"
-        type="checkbox"
-        :name="peer"
-        :value="peer"
-      />
-      <label v-for="peer in peers" :for="peer">{{ peer }}</label>
+      <h1 id="logo" class="title">Synk</h1>
+      <div class="peer-list-wrapper">
+        <p v-if="peers == null">Scanning for peers...</p>
+        <p v-else-if="peers.length == 0">
+          No peers found.
+          <RouterLink to="/settings"
+            ><span
+              style="
+                border-bottom: dotted 1px gray;
+                color: white;
+                text-decoration: none;
+              "
+              >Check your connection.</span
+            ></RouterLink
+          >
+        </p>
+        <input
+          v-model="selectedPeers"
+          v-for="peer in peers"
+          type="checkbox"
+          :name="peer"
+          :value="peer"
+        />
+        <label v-for="peer in peers" :for="peer">{{ peer }}</label>
+      </div>
 
       <div class="synk-button">
         <img
@@ -51,7 +67,6 @@ onMounted(() => {
           @click="synk"
           src="../assets/images/refresh.png"
         />
-        <!-- <h1 id="app-name">"Synk"</h1> -->
       </div>
     </div>
   </main>
@@ -63,20 +78,36 @@ onMounted(() => {
   src: url("../assets/fonts/typewriter.otf") format("opentype");
 }
 
-@font-face {
-  font-family: "FrutigerAero";
-  src: url("../assets/fonts/AerobicsRegular.ttf") format("truetype");
-}
-
 .synk-button {
   cursor: pointer;
   margin-top: 200px;
+  background: linear-gradient(
+    180deg,
+    rgba(148, 148, 148, 0.6) 0,
+    rgba(7, 7, 7, 0.6) 20%,
+    rgba(19, 19, 19, 0.6) 40%,
+    rgba(105, 102, 102, 0.6) 100%
+  );
+  margin: auto;
+  width: 200px;
+  height: 200px;
+  border-radius: 200px;
+  display: flex;
+}
+
+.peer-list-wrapper {
+  border: solid 1px darkgray;
+  width: 80%;
+  margin: auto auto 60px auto;
+  background-color: rgba(40, 40, 40, 0.5);
 }
 
 #main-synk-button {
-  height: 25%;
-  width: 25%;
+  /* height: 25%; */
+  /* width: 25%; */
+  width: 128px;
   margin: auto;
+
   filter: contrast(100) invert();
 
   /* rotate: 0deg; */

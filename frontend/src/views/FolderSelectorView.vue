@@ -151,10 +151,13 @@ const showFolderButton = ref<boolean>(true);
   <div class="outer-view">
     <div class="folder-selection-view">
       <div class="folder-view-wrapper">
-        <h1>Shared Folder</h1>
-        <div class="shared-directory tooltip">
+        <h1 class="title">Shared Folder</h1>
+        <div class="shared-directory tooltip" v-if="showFolderButton">
           <span class="tooltiptext">Your shared directory</span
           >{{ sharedDirectory }}
+        </div>
+        <div class="current-directory shared-directory" v-else>
+          {{ currentDir }}
         </div>
         <Transition name="slide-fade">
           <div class="change-folder-button-wrapper" v-if="showFolderButton">
@@ -187,7 +190,7 @@ const showFolderButton = ref<boolean>(true);
               </button>
             </div>
             <div class="options-and-current-dir">
-              <p class="current-directory">{{ currentDir }}</p>
+              <!-- <p class="current-directory">{{ currentDir }}</p> -->
               <div class="options-wrapper">
                 <div class="option">
                   <div>Show hidden folders</div>
@@ -333,9 +336,26 @@ const showFolderButton = ref<boolean>(true);
 .current-directory {
   color: white;
   /* border: solid black 2px; */
-  padding: 10px;
+  /* padding: 10px; */
   /* background-color: lightgrey;
    */
+  animation: blink 0.5s ease-in-out;
+  animation-iteration-count: infinite;
+  /* border: solid 1px rbga(0, 0, 0, 0); */
+  border-width: 1px;
+  border-style: solid;
+}
+
+@keyframes blink {
+  0% {
+    border-color: black;
+  }
+  50% {
+    border-color: white;
+  }
+  100% {
+    border-color: black;
+  }
 }
 
 .nav-button-group {
