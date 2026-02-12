@@ -98,6 +98,10 @@ func (a *App) GetLocalIP() string {
 	return network.GetLocalIP()
 }
 
+func (a *App) GetSharedDirectory() string {
+	return config.GetConfigValue(config.SharedDirectory)
+}
+
 func (a *App) TestLANDiscovery() {
 	network.LANDiscovery()
 }

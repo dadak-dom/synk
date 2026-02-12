@@ -1,7 +1,10 @@
 <script lang="ts" setup>
-import { onMounted, ref, useTemplateRef } from "vue";
+import { onMounted, onUpdated, ref, useTemplateRef } from "vue";
 // import what I need from the backend...
-import { FolderSelectorControl } from "../../wailsjs/go/main/App";
+import {
+  FolderSelectorControl,
+  GetSharedDirectory,
+} from "../../wailsjs/go/main/App";
 import FolderSelectorItems from "../components/FolderSelectorItems.vue";
 
 const enableSelector = ref(false);
@@ -11,9 +14,11 @@ const filesInCurrentDir = ref<string[]>([]);
 var rawFoldersInCurrentDir = <string[]>[];
 var rawFilesInCurrentDir = <string[]>[];
 
+const sharedDirectory = ref("");
+
 // Options for viewing the file selector:
 const showHiddenFiles = ref(false);
-const showFiles = ref(false); // FIXME : should be named "showFiles", too tired to fix it now :(
+const showFiles = ref(false);
 
 // Modal settings
 // const modal = useTemplateRef("modal");
@@ -80,6 +85,7 @@ function selectFolder() {
   openFolderSelector.value = false;
   setTimeout(() => (showFolderButton.value = true), 300);
   FolderSelectorControl(currentDir.value, FolderSelectorCommands.SELECT, "");
+  sharedDirectory.value = currentDir.value;
 }
 
 function cancelFolderSelectTransition() {
@@ -132,6 +138,9 @@ onMounted(() => {
     handleShowFiles();
     console.log(foldersInCurrentDir.value);
   });
+  GetSharedDirectory().then((dir) => {
+    sharedDirectory.value = dir;
+  });
 });
 
 const openFolderSelector = ref<boolean>(false);
@@ -139,78 +148,151 @@ const showFolderButton = ref<boolean>(true);
 </script>
 
 <template>
-  <div class="folder-selection-view">
-    <p>Currently shared folder: FIX THIS</p>
-    <Transition name="slide-fade">
-      <button
-        class="change-folder-button"
-        @click="changeFolderTransition"
-        v-if="showFolderButton"
-      >
-        <!-- <img class="" @click="chooseNewDir" src="../assets/images/folder.png" /> -->
-        Change Shared Folder
-      </button>
-    </Transition>
-    <Transition name="slide-fade">
-      <div class="folder-selector-box" v-if="openFolderSelector">
-        <div class="folder-selection-box">
-          <FolderSelectorItems
-            :folders="foldersInCurrentDir"
-            :files="filesInCurrentDir"
-            @move-down-dir="moveDownDir"
-          />
+  <div class="outer-view">
+    <div class="folder-selection-view">
+      <div class="folder-view-wrapper">
+        <h1>Shared Folder</h1>
+        <div class="shared-directory tooltip">
+          <span class="tooltiptext">Your shared directory</span
+          >{{ sharedDirectory }}
         </div>
-        <div class="nav-button-group">
-          <button class="nav-button" @click="cancelFolderSelectTransition">
-            Cancel
-          </button>
-          <button class="nav-button" @click="moveUpDir">↑ Move Up</button>
-          <button class="nav-button" @click="goHome">Go Home</button>
-          <button class="nav-button" @click="selectFolder">
-            Select this folder
-          </button>
-        </div>
-        <div class="options-and-current-dir">
-          <p class="current-directory">{{ currentDir }}</p>
-          <div class="options-wrapper">
-            <div class="option">
-              <div>Show hidden folders</div>
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  v-bind:checked="showHiddenFiles"
-                  v-model="showHiddenFiles"
-                  @change="handleShowHidden"
-                />
-                <span class="slider round"></span>
-              </label>
+        <Transition name="slide-fade">
+          <div class="change-folder-button-wrapper" v-if="showFolderButton">
+            <button
+              class="change-folder-button"
+              @click="changeFolderTransition"
+              v-if="showFolderButton"
+            >
+              Change Shared Folder
+            </button>
+          </div>
+        </Transition>
+        <Transition name="slide-fade">
+          <div class="folder-selector-box" v-if="openFolderSelector">
+            <div class="folder-selection-box">
+              <FolderSelectorItems
+                :folders="foldersInCurrentDir"
+                :files="filesInCurrentDir"
+                @move-down-dir="moveDownDir"
+              />
             </div>
-            <div class="option">
-              <div>Show files</div>
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  v-bind:checked="showFiles"
-                  v-model="showFiles"
-                  @change="handleShowFiles"
-                />
-                <span class="slider round"></span>
-              </label>
+            <div class="nav-button-group">
+              <button class="nav-button" @click="cancelFolderSelectTransition">
+                Cancel
+              </button>
+              <button class="nav-button" @click="moveUpDir">↑ Move Up</button>
+              <button class="nav-button" @click="goHome">Go Home</button>
+              <button class="nav-button" @click="selectFolder">
+                Select this folder
+              </button>
+            </div>
+            <div class="options-and-current-dir">
+              <p class="current-directory">{{ currentDir }}</p>
+              <div class="options-wrapper">
+                <div class="option">
+                  <div>Show hidden folders</div>
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      v-bind:checked="showHiddenFiles"
+                      v-model="showHiddenFiles"
+                      @change="handleShowHidden"
+                    />
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+                <div class="option">
+                  <div>Show files</div>
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      v-bind:checked="showFiles"
+                      v-model="showFiles"
+                      @change="handleShowFiles"
+                    />
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </Transition>
       </div>
-    </Transition>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .folder-selection-view {
   height: 86%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.folder-view-wrapper {
+  width: 90%;
 }
 
 .folder-selector-box {
   height: 100%;
+  width: 100%;
+  border-left: 1px solid grey;
+  border-right: 1px solid grey;
+  background: rgba(20, 20, 20, 0.9);
+}
+
+.change-folder-button-wrapper {
+  background-color: rgba(30, 30, 30, 0.8);
+  border-left: 1px solid grey;
+  border-right: 1px solid grey;
+  width: 100%;
+  height: 90%;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+}
+
+.change-folder-button-wrapper .change-folder-button {
+  color: white;
+  padding: 20px;
+  border: 2px solid rgb(33, 33, 33);
+  border-radius: 10px;
+  margin-bottom: 40px;
+}
+
+.shared-directory {
+  /* margin: 10%; */
+  background: linear-gradient(
+    180deg,
+    rgba(148, 148, 148, 0.9) 0,
+    rgba(7, 7, 7, 0.93) 20%,
+    rgba(19, 19, 19, 0.9) 40%,
+    rgba(30, 30, 30, 0.93) 100%
+  );
+  /* padding: 20px; */
+  padding-top: 20px;
+  padding-bottom: 20px;
+  /* margin-top: 10%; */
+  width: 100%;
+  border-left: 1px solid grey;
+  border-right: 1px solid grey;
+  border-top: 1px solid grey;
+  border-top-left-radius: 40px;
+  border-top-right-radius: 40px;
+}
+
+.folder-view-spacer {
+  padding-top: 20px;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 7, 7, 0.93) 0,
+    rgba(19, 19, 19, 0.9) 20%,
+    rgba(71, 71, 71, 0.9) 40%,
+    rgba(148, 148, 148, 0.9) 100%
+  );
+  border-left: 1px solid grey;
+  border-right: 1px solid grey;
+  width: 100%;
 }
 
 .slide-fade-enter-active {
@@ -241,30 +323,45 @@ const showFolderButton = ref<boolean>(true);
 .options-and-current-dir .options-wrapper {
   display: grid;
   grid-template-columns: auto auto auto;
-  background-color: lightgrey;
+  /* background-color: lightgrey; */
 }
 
 .options-and-current-dir .option {
-  color: black;
+  color: white;
 }
 
 .current-directory {
-  color: black;
-  border: solid black 2px;
+  color: white;
+  /* border: solid black 2px; */
   padding: 10px;
-  background-color: lightgrey;
+  /* background-color: lightgrey;
+   */
 }
 
 .nav-button-group {
   display: flex;
   justify-content: center;
   flex-direction: row;
+}
 
-  .nav-button {
-    background-color: lightgrey;
-    width: 50%;
-    margin: auto;
-  }
+.change-folder-button {
+  margin-top: 50px;
+  background: linear-gradient(
+    180deg,
+    rgba(148, 148, 148, 0.9) 0,
+    rgba(7, 7, 7, 0.93) 20%,
+    rgba(19, 19, 19, 0.9) 40%,
+    rgba(105, 102, 102, 0.93) 100%
+  );
+}
+
+.nav-button-group .nav-button {
+  background-color: lightgrey;
+  /* width: 50%; */
+  /* margin: auto; */
+  height: 100%;
+  color: white;
+  background-color: rgba(45, 44, 44, 0.7);
 }
 
 .folder-selection-box {
@@ -327,7 +424,10 @@ const showFolderButton = ref<boolean>(true);
 }
 
 input:checked + .slider {
-  background-color: #98cb98;
+  /* background-color: #98cb98; */
+  /* background-image: url("../assets/images/slider-background.jpg");
+   */
+  background-color: limegreen;
 }
 
 input:focus + .slider {
@@ -347,5 +447,35 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
+}
+
+/* Tooltip container */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  /* border-bottom: 1px dotted black; Add dots under the hoverable text */
+  cursor: pointer;
+}
+
+/* Tooltip text */
+.tooltiptext {
+  visibility: hidden; /* Hidden by default */
+  width: 70px;
+  background-color: black;
+  color: #ffffff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1; /* Ensure tooltip is displayed above content */
+  font-size: 10px;
+  bottom: 100%;
+  left: 35%;
+  margin-left: -35%;
+}
+
+/* Show the tooltip text on hover */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
 }
 </style>

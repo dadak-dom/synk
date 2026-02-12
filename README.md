@@ -63,3 +63,12 @@ FIXME:
 NOTES:
 
 - For some reason, the multicasting only works between windows/linux when I change the multicast address (e.g. from 224.0.0.0 to 224.0.0.1)
+
+NOTE!:
+
+- On Linux builds, DO NOT use CSS rules like this:
+  .outer-rule {
+  .inner-rule
+  }
+
+This breaks the inner rule

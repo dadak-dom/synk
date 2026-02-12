@@ -15,7 +15,6 @@ function folderClick(folder: string) {
 
 <template>
   <main>
-    <!-- <div v-for="folder in folders">test: {{ folder }}</div> -->
     <div
       v-if="folders == undefined || folders.length > 0"
       v-for="folder in folders"

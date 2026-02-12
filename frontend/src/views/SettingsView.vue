@@ -17,4 +17,8 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.settings {
+  margin-top: 20px;
+}
+</style>

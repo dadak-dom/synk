@@ -43,10 +43,19 @@ onUpdated(() => {
   display: flex;
   justify-content: left;
   gap: 5px;
+  background: linear-gradient(
+    300deg,
+    rgba(86, 86, 86, 0.9) 0,
+    rgba(30, 30, 30, 0.93) 1%
+  );
+  border: none;
+  border-radius: 1px;
+  color: white;
+  cursor: pointer;
 }
 
 .folder-image {
-  width: 10%;
+  width: 5%;
 }
 
 .slide-fade-enter-active {

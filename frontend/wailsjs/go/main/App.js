@@ -14,6 +14,10 @@ export function GetPeerList() {
   return window['go']['main']['App']['GetPeerList']();
 }
 
+export function GetSharedDirectory() {
+  return window['go']['main']['App']['GetSharedDirectory']();
+}
+
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
