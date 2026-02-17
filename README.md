@@ -1,75 +1,51 @@
-# README
+# Synk 🔄
 
-## About
+A peer-to-peer, LAN file sharing program 📂. Built for seamless transitions between your working devices.
 
-This is the official Wails Vue-TS template.
+## About ❔
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+<b>Synk</b> is a desktop app designed for sharing files across a private network. <b>Synk</b> doesn't just allow you to send files; it automatically "synk"-chronizes the contents of your selected <b>Shared Folder</b>. For example:<br><br> On my <b>Desktop</b> 🖥️, say you have:
 
-## Live Development
+```
+your_shared_folder/
+  homework.txt
+  resume.pdf
+  pictures/
+    img001.png
+    img002.png
+```
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+<br> On your <b>Laptop</b> 💻, you added some notes to your homework, and maybe found a good study guide:
 
-## Building
+```golang
+your_shared_folder/
+  homework.txt // <- newer than the version on your Desktop
+  study_guide.pdf
+  resume.pdf
+  pictures/ // <- maybe you took some more pictures, too.
+    img003.png
+    img004.png
+```
 
-To build a redistributable, production mode package, use `wails build`.
+After opening the application on both devices, selecting a peer, and clicking the big Synk (🔄) button, <b>both</b> devices should now contain:
 
-TODO:
+```golang
+your_shared_folder/
+  homework.txt // updated to newest version!
+  study_guide.pdf
+  resume.pdf
+  pictures/
+    img001.png
+    img002.png
+    img003.png
+    img004.png
+```
 
-FRONTEND:
+The idea is for <b>Synk</b> to allow you to seamlessly transition your work from one device to another. With this program, you can quickly and easily send files to yourself without relying on third-party services or setting up a physical connection.
 
-NOW:
+## Development 👩‍💻
 
-- Add a notification when the synk finishes!
-- Finish the PeerList and SynkButton parts of the Mainview
-- Display the user's local IP
-- In the main view, create a subcomponent that can list the files that are currently in the shared folder (\*) - ideally in like a drop-down menu
+<b>Synk</b> is built with <a href="https://wails.io/">Wails</a>. Follow their instructions for setting it up.
 
-LATER:
-
-- Make the navbar pretty.
-- Overall, think of a cohesive aesthetic to create for the app, and then make the assets for it
-- Expanding on (\*): show a comparison of the files on the local vs. on the remote machine before doing the synk (as a sort of confirmation).
-  Would need to create a graphical rendering of the filesystem (nested folders, etc.)
-
-BACKEND:
-NOW:
-
-- Generate a random string of words or numbers on startup. Use the FRONTEND to confirm that you want to synk with the computer with that ID
-- only launch the API when actually running a synk. (Less drastic measure: toggle the API to off when not synking.)
-
-LATER (LONG TERM):
-
-- Find a way to allow users to automatically synk so long as both computers are on
-- Find a way to "remember" other devices and automatically synk with them
-
-- Folder Selector:
-  - make it prettier
-- Multicast
-  - Make sure that the library works when used on the same LAN network
-- File sharing
-  - code up the file sending / receiving logic
-
-FIXME:
-
-- Make it so that the shared folder is the default when opening the folder selector
-- For the time being, folders don't work. Will need to implement some sort of check that creates a subdirectory if it doesn't already exist
-- There is a bug (on windows) where the selected local IP for the http server is on a different subnet. Will need to make it so that the API is only launched once a connection has been made via multicast
-- Will need to make it so that the program is always listening for new peers in the background. Will have to rejigger the logic a little bit
-
-NOTES:
-
-- For some reason, the multicasting only works between windows/linux when I change the multicast address (e.g. from 224.0.0.0 to 224.0.0.1)
-
-NOTE!:
-
-- On Linux builds, DO NOT use CSS rules like this:
-  .outer-rule {
-  .inner-rule
-  }
-
-This breaks the inner rule
+Run the app locally with `wails dev`<br>
+Compile the app with `wails build`
