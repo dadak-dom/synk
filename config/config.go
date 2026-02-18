@@ -16,9 +16,29 @@ const (
 	//TODO: add more as needed
 )
 
+// Get the config file location
+func configSetup() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		log.Fatal("Fatal error when setting up config directory: ", err)
+	}
+	path := filepath.Join(dir, "synk")
+	err = os.MkdirAll(path, 0755)
+	if err != nil {
+		log.Fatal("Fatal error when setting up config directory: ", err)
+	}
+	return path
+}
+
+// FIXME: apparently there is a way to store preferences using:
+// runtime.StoreSet(ctx, key, value)
+// and 
+// value, err := runtime.StoreGet(ctx, key)
+
 // describes where to find the files for each config item
 var ConfigLocation = map[ConfigItem]string{
-	SharedDirectory: "./config",
+	// SharedDirectory: "./config",
+	SharedDirectory: configSetup(),
 }
 
 func UpdateUserConfig(updated_item ConfigItem, value string) {
