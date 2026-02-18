@@ -153,8 +153,9 @@ const showFolderButton = ref<boolean>(true);
       <div class="folder-view-wrapper">
         <h1 class="title">Shared Folder</h1>
         <div class="shared-directory tooltip" v-if="showFolderButton">
-          <span class="tooltiptext">Your shared directory</span
-          >{{ sharedDirectory }}
+          <span class="tooltiptext">Your shared directory</span>
+          <div v-if="sharedDirectory != ''">{{ sharedDirectory }}</div>
+          <div v-else style="color: red">No shared directory set.</div>
         </div>
         <div class="current-directory shared-directory" v-else>
           {{ currentDir }}
