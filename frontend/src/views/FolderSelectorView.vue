@@ -7,6 +7,7 @@ import {
 } from "../../wailsjs/go/main/App";
 import FolderSelectorItems from "../components/FolderSelectorItems.vue";
 
+// Folder and file data
 const enableSelector = ref(false);
 const currentDir = ref();
 const foldersInCurrentDir = ref<string[]>([]);
@@ -16,13 +17,12 @@ var rawFilesInCurrentDir = <string[]>[];
 
 const sharedDirectory = ref("");
 
+// Ignore list
+const ignoreList = ref<string[]>([]);
+
 // Options for viewing the file selector:
 const showHiddenFiles = ref(false);
 const showFiles = ref(false);
-
-// Modal settings
-// const modal = useTemplateRef("modal");
-const modalOpacity = ref("0");
 
 const FolderSelectorCommands = {
   MOVE_UP: 0,
@@ -121,11 +121,7 @@ function handleShowFiles() {
   }
 }
 
-function chooseNewDir() {
-  enableSelector.value = true;
-  console.debug("chooseNewDir event fired...");
-  setTimeout(() => (modalOpacity.value = "1"), 300);
-}
+function addFileToIgnoreList(file: string) {}
 
 onMounted(() => {
   FolderSelectorControl("", FolderSelectorCommands.INIT, "").then((value) => {
@@ -141,6 +137,7 @@ onMounted(() => {
   GetSharedDirectory().then((dir) => {
     sharedDirectory.value = dir;
   });
+  // Get previously saved ignore list
 });
 
 const openFolderSelector = ref<boolean>(false);
@@ -168,6 +165,18 @@ const showFolderButton = ref<boolean>(true);
             >
               Change Shared Folder
             </button>
+            <div class="ignore-list">
+              <FolderSelectorItems
+                :folders="foldersInCurrentDir"
+                :files="rawFilesInCurrentDir"
+                :folder-func="(folder: string) => {}"
+                :file-func="
+                  (file: string) => {
+                    addFileToIgnoreList(file);
+                  }
+                "
+              />
+            </div>
           </div>
         </Transition>
         <Transition name="slide-fade">
@@ -176,6 +185,12 @@ const showFolderButton = ref<boolean>(true);
               <FolderSelectorItems
                 :folders="foldersInCurrentDir"
                 :files="filesInCurrentDir"
+                :folder-func="
+                  (folder: string) => {
+                    moveDownDir(folder);
+                  }
+                "
+                :file-func="(file: string) => {}"
                 @move-down-dir="moveDownDir"
               />
             </div>
@@ -231,6 +246,12 @@ const showFolderButton = ref<boolean>(true);
   width: 100%;
   display: flex;
   justify-content: center;
+}
+
+.ignore-list {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  max-height: 200px;
 }
 
 .folder-view-wrapper {

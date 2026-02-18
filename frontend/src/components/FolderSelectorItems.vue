@@ -4,8 +4,10 @@
 import FolderItem from "./FolderItem.vue";
 
 defineProps({
-  folders: Array<string>,
-  files: Array<string>,
+  folders: { type: Array<string>, required: true },
+  files: { type: Array<string>, required: true },
+  folderFunc: { type: Function, required: true },
+  fileFunc: { type: Function, required: true },
 });
 
 const emit = defineEmits(["moveDownDir"]);
@@ -21,10 +23,11 @@ function folderClick(folder: string) {
       v-if="folders == undefined || folders.length > 0"
       v-for="folder in folders"
     >
-      <FolderItem :text="folder" @click="folderClick(folder)" :file="false" />
+      <!-- <FolderItem :text="folder" @click="folderClick(folder)" :file="false" /> -->
+      <FolderItem :text="folder" @click="folderFunc(folder)" :file="false" />
     </div>
     <div v-if="files != undefined" v-for="file in files">
-      <FolderItem :text="file" :file="true" />
+      <FolderItem :text="file" @click="fileFunc(file)" :file="true" />
     </div>
   </main>
 </template>
