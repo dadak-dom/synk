@@ -1,13 +1,42 @@
 # TODO list: Bugs, new features, notes, etc.
 
-FRONTEND:
+## New features to add:
 
-NOW:
+Sorted and color-coded by priority
 
-- Add a notification when the synk finishes!
-- Finish the PeerList and SynkButton parts of the Mainview
-- Display the user's local IP
-- In the main view, create a subcomponent that can list the files that are currently in the shared folder (\*) - ideally in like a drop-down menu
+### <span style="color: red">TOP: Notify user when transfer done!</span>
+
+Per the title.
+
+### <span style="color: orange">(1) Choose files to ignore</span>
+
+In the folder selector menu, list the files in the currently chosen directory. For each file, if they are clicked, toggle a strike-through on their name. For every file/subfolder that is selected (e.g. <s>test.txt</s> or <s>folder</s>), exempt it from the synk process.
+
+### <span style="color: orange">(2) New config option: Launch on start</span>
+
+In settings menu, allow a user to choose if the app should launch on startup. <br>
+Will need new config options on the backend and set up communication between FE and BE
+
+### <span style="color: orange">(3) New config option: Auto-synk</span>
+
+In settings menu, user should have option to auto-synk. If selected, this mode should do the following:
+
+1. Set up a watcher to watch the shared directory. <br> Make sure if the directory changes, the watcher changes accordingly
+2. If a change is logged, check if there are peers on the network. Verify that peers in the peerList are still around, maybe ping them?
+3. If they (peers) are around, initiate a "synk" without the user's input
+4. Continue as long as the app is running
+
+### <span style="color: orange">(4) Make app dockable</span>
+
+Per the title, see if I can make the app dockable (e.g. like Discord)
+
+### <span style="color: cornflowerblue">(5) Add some security layer</span>
+
+In the interest of user safety, I should probably add some sort of encryption / safety mechanism to the requests being sent. This is not a top priority because the idea is that the user would use this on their home network, and so they wouldn't be susceptible to "man in the middle" attacks or anything of that nature. However, it would be nice to give the user some peace-of-mind in case they waned to synk their files when connected to a network they may not have full control over, e.g. in the office or at a coffee shop.
+
+### <span style="color: cornflowerblue">(6) Create mobile app version</span>
+
+I suppose this would mean making sure that the CSS looks good on mobile devices. Mobile builds are not [implemented yet](https://github.com/wailsapp/wails/issues/1481), but mi.ght be in the near future
 
 LATER:
 

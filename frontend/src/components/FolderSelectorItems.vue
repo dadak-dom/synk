@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+// TODO: See if I can abstract this out (New Feature 1)
+// then I can use the same component for the "synk-ignore" feature, maybe by passing in a custom function on click
 import FolderItem from "./FolderItem.vue";
 
 defineProps({
