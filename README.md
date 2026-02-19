@@ -4,7 +4,7 @@ A peer-to-peer, LAN file sharing program 📂. Built for seamless transitions be
 
 ## About ❔
 
-<b>Synk</b> is a desktop app designed for sharing files across a private network. <b>Synk</b> doesn't just allow you to send files; it automatically "synk"-chronizes the contents of your selected <b>Shared Folder</b>. For example:<br><br> On my <b>Desktop</b> 🖥️, say you have:
+<b>Synk</b> is a desktop app designed for sharing files across a private network. <b>Synk</b> doesn't just allow you to send files; it automatically "synk"-chronizes the contents of your selected <b>Shared Folder</b>. For example:<br><br> On your <b>Desktop</b> 🖥️, say you have:
 
 ```golang
 your_shared_folder/
