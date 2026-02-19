@@ -10,7 +10,8 @@ Per the title.
 
 ### <span style="color: orange">(1) Choose files to ignore</span>
 
-In the folder selector menu, list the files in the currently chosen directory. For each file, if they are clicked, toggle a strike-through on their name. For every file/subfolder that is selected (e.g. <s>test.txt</s> or <s>folder</s>), exempt it from the synk process.
+In the folder selector menu, list the files in the currently chosen directory. For each file, if they are clicked, toggle a strike-through on their name. For every file/subfolder that is selected (e.g. <s>test.txt</s> or <s>folder</s>), exempt it from the synk process.<br>
+Almost done, just need to test and make sure that it works + maybe add subfolder support?
 
 ### <span style="color: orange">(2) New config option: Launch on start</span>
 

@@ -99,7 +99,22 @@ func (a *App) GetLocalIP() string {
 }
 
 func (a *App) GetSharedDirectory() string {
-	return config.GetConfigValue(config.SharedDirectory)
+	t := config.GetConfigValueString(config.SharedDirectory)
+	return t
+}
+
+func (a *App) SetConfigItemStringList(item config.ConfigItem, value []string) {
+	fmt.Printf("TESTING: %T\n", value)
+	config.UpdateUserConfigStringList(item, value)
+}
+
+
+func (a *App) GetConfigValueString(item config.ConfigItem) string {
+	return config.GetConfigValueString(item)
+}
+
+func (a *App) GetConfigValueStringList(item config.ConfigItem) []string {
+	return config.GetConfigValueStringList(item)
 }
 
 func (a *App) TestLANDiscovery() {
@@ -128,6 +143,8 @@ func (a *App) FolderSelectorControl(currentDir string, command folderselector.Fo
 	case folderselector.Select:
 		folderselector.SelectSharedFolder(currentDir)
 		output = folderselector.FolderSelectorResult{Directory: "", Files: make([]string, 0)}
+	case folderselector.Cancel:
+		output = folderselector.CancelDir()
 	}
 
 	fmt.Println(output)
@@ -154,9 +171,11 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 	// fmt.Println("Called RunSynk")
 	// fmt.Println("Received: ", connection, peerFileInfo)
 
+	// FIXME: filter out the files in the ignore list config file
+
 	// compare the shared directories
 	// FIXME: The code below this comment is correct. Uncomment once peer discovery works
-	local_shared_folder := config.GetConfigValue(config.SharedDirectory)
+	local_shared_folder := config.GetConfigValueString(config.SharedDirectory)
 	// local_shared_folder := "test_shared_dir_local"
 	comparison := utils.CompareSharedDirectories(utils.ScanSharedDirectory(local_shared_folder), peerFileInfo)
 	filesToSend, filesToReceive := comparison["SEND"], comparison["RECEIVE"]

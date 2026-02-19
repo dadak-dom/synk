@@ -54,7 +54,7 @@ func GetLocalIP() string {
 }
 
 func GetSharedFolderInfo(c *gin.Context) {
-	sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValue(config.SharedDirectory))
+	sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValueString(config.SharedDirectory))
 	c.IndentedJSON(http.StatusOK, sharedDirectoryInfo)
 }
 
@@ -83,7 +83,7 @@ func GetFile(c *gin.Context) {
 	// i := c.Param("index")
 	i, _ := strconv.Atoi(c.Query("index"))
 	// get list of files in shared folder
-	sharedFiles := utils.ListFilesInSharedDirectory(config.GetConfigValue(config.SharedDirectory))
+	sharedFiles := utils.ListFilesInSharedDirectory(config.GetConfigValueString(config.SharedDirectory))
 	fmt.Println("FILE THAT I WOULD SEND: , ", sharedFiles[i], "i = ", i, "param=", c.Query("index"))
 	// I need to be able to construct the path to the file in question
 	complete_path := config.ConstructCompleteFilePath(sharedFiles[i])

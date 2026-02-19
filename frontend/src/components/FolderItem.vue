@@ -4,6 +4,7 @@ import { onMounted, onUpdated, ref } from "vue";
 defineProps({
   text: String,
   file: Boolean,
+  ignored: Boolean,
 });
 
 const showItem = ref<boolean>(false);
@@ -28,9 +29,12 @@ onUpdated(() => {
           src="../assets/images/folder.png"
         />
       </Transition>
-      <Transition name="slide-fade">
+      <Transition name="fade">
         <div class="folder-text" v-if="showItem">
-          {{ text }}
+          <div v-if="ignored" style="color: red">
+            <s>{{ text }}</s>
+          </div>
+          <div v-else>{{ text }}</div>
         </div>
       </Transition>
     </button>
@@ -58,7 +62,7 @@ onUpdated(() => {
   width: 5%;
 }
 
-.slide-fade-enter-active {
+/* .slide-fade-enter-active {
   transition: all 0.3s ease-out;
 }
 
@@ -69,6 +73,19 @@ onUpdated(() => {
 .slide-fade-enter-from,
 .slide-fade-leave-to {
   transform: translateX(20px);
+  opacity: 0;
+} */
+.fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.fade-leave-active {
+  transition: all 0.3s ease-in-out;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  /* transform: translateX(20px); */
   opacity: 0;
 }
 </style>

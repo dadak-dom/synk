@@ -1,9 +1,13 @@
 <script lang="ts" setup>
-import { onMounted, onUpdated, ref, useTemplateRef } from "vue";
+import { onMounted, ref } from "vue";
 // import what I need from the backend...
+// FIXME: Make it so that I can't select a new folder unless I've moved out of the original dir
 import {
   FolderSelectorControl,
+  GetConfigValueString,
+  GetConfigValueStringList,
   GetSharedDirectory,
+  SetConfigItemStringList,
 } from "../../wailsjs/go/main/App";
 import FolderSelectorItems from "../components/FolderSelectorItems.vue";
 
@@ -12,13 +16,14 @@ const enableSelector = ref(false);
 const currentDir = ref();
 const foldersInCurrentDir = ref<string[]>([]);
 const filesInCurrentDir = ref<string[]>([]);
-var rawFoldersInCurrentDir = <string[]>[];
-var rawFilesInCurrentDir = <string[]>[];
+const rawFoldersInCurrentDir = ref<string[]>([]);
+const rawFilesInCurrentDir = ref<string[]>([]);
 
 const sharedDirectory = ref("");
 
 // Ignore list
-const ignoreList = ref<string[]>([]);
+const fileIgnoreList = ref<string[]>([]);
+const folderIgnoreList = ref<string[]>([]);
 
 // Options for viewing the file selector:
 const showHiddenFiles = ref(false);
@@ -30,6 +35,13 @@ const FolderSelectorCommands = {
   GO_HOME: 2,
   INIT: 3,
   SELECT: 4,
+  CANCEL: 5,
+};
+
+const ConfigItems: { [x: string]: string } = {
+  SHARED_DIR: "shared_directory.txt",
+  FILE_IGNORE: "file_ignore.jsonl",
+  FOLDER_IGNORE: "folder_ignore.jsonl",
 };
 
 function moveUpDir() {
@@ -40,9 +52,9 @@ function moveUpDir() {
   ).then((value) => {
     currentDir.value = value.Directory;
     foldersInCurrentDir.value = value.Folders;
-    rawFoldersInCurrentDir = foldersInCurrentDir.value;
+    rawFoldersInCurrentDir.value = foldersInCurrentDir.value;
     filesInCurrentDir.value = value.Files;
-    rawFilesInCurrentDir = value.Files;
+    rawFilesInCurrentDir.value = value.Files;
     handleShowHidden();
     handleShowFiles();
     console.log(foldersInCurrentDir.value);
@@ -57,9 +69,9 @@ function moveDownDir(f: string) {
   ).then((value) => {
     currentDir.value = value.Directory;
     foldersInCurrentDir.value = value.Folders;
-    rawFoldersInCurrentDir = foldersInCurrentDir.value;
+    rawFoldersInCurrentDir.value = foldersInCurrentDir.value;
     filesInCurrentDir.value = value.Files;
-    rawFilesInCurrentDir = value.Files;
+    rawFilesInCurrentDir.value = value.Files;
     handleShowHidden();
     handleShowFiles();
     console.log(foldersInCurrentDir.value);
@@ -71,8 +83,8 @@ function goHome() {
     (value) => {
       currentDir.value = value.Directory;
       foldersInCurrentDir.value = value.Folders;
-      rawFoldersInCurrentDir = foldersInCurrentDir.value;
-      rawFilesInCurrentDir = value.Files;
+      rawFoldersInCurrentDir.value = foldersInCurrentDir.value;
+      rawFilesInCurrentDir.value = value.Files;
       filesInCurrentDir.value = value.Files;
       handleShowHidden();
       handleShowFiles();
@@ -86,9 +98,21 @@ function selectFolder() {
   setTimeout(() => (showFolderButton.value = true), 300);
   FolderSelectorControl(currentDir.value, FolderSelectorCommands.SELECT, "");
   sharedDirectory.value = currentDir.value;
+  // reset the ignored files list
+  SetConfigItemStringList(ConfigItems.FILE_IGNORE, []);
+  SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, []);
+  folderIgnoreList.value = [];
+  fileIgnoreList.value = [];
 }
 
 function cancelFolderSelectTransition() {
+  // add something to reset the ignore list
+  FolderSelectorControl("", FolderSelectorCommands.CANCEL, "").then((value) => {
+    rawFilesInCurrentDir.value = value.Files;
+    rawFoldersInCurrentDir.value = value.Folders;
+  });
+  handleShowFiles();
+  handleShowHidden();
   openFolderSelector.value = false;
   setTimeout(() => {
     showFolderButton.value = true;
@@ -104,24 +128,66 @@ function changeFolderTransition() {
 
 function handleShowHidden() {
   if (!showHiddenFiles.value) {
-    rawFoldersInCurrentDir = foldersInCurrentDir.value;
+    rawFoldersInCurrentDir.value = foldersInCurrentDir.value;
     foldersInCurrentDir.value = foldersInCurrentDir.value.filter(
       (file) => !file.startsWith("."),
     );
   } else {
-    foldersInCurrentDir.value = rawFoldersInCurrentDir;
+    foldersInCurrentDir.value = rawFoldersInCurrentDir.value;
   }
 }
 
 function handleShowFiles() {
   if (showFiles.value) {
-    filesInCurrentDir.value = rawFilesInCurrentDir;
+    filesInCurrentDir.value = rawFilesInCurrentDir.value;
   } else {
     filesInCurrentDir.value = [];
   }
 }
 
-function addFileToIgnoreList(file: string) {}
+function updateFileIgnoreList(file: string) {
+  // if file not in the list, add it
+  // otherwise, remove it
+  console.log("file ignore list: ", fileIgnoreList.value);
+  let i = fileIgnoreList.value.indexOf(file);
+  if (i == -1) {
+    fileIgnoreList.value.push(file);
+  } else {
+    fileIgnoreList.value = fileIgnoreList.value.filter(
+      (value, index) => value != file,
+    );
+  }
+  // remove empty string
+  fileIgnoreList.value = fileIgnoreList.value.filter((v) => v != "");
+  SetConfigItemStringList(ConfigItems.FILE_IGNORE, fileIgnoreList.value);
+  console.log(fileIgnoreList.value);
+}
+
+function updateFolderIgnoreList(folder: string) {
+  // if file not in the list, add it
+  // otherwise, remove it
+  console.log("folder ignore list: ", folderIgnoreList.value);
+  let i = folderIgnoreList.value.indexOf(folder);
+  if (i == -1) {
+    folderIgnoreList.value.push(folder);
+  } else {
+    folderIgnoreList.value = folderIgnoreList.value.filter(
+      (value, index) => value != folder,
+    );
+  }
+  // remove empty string
+  folderIgnoreList.value = folderIgnoreList.value.filter((v) => v != "");
+  SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
+  console.log(folderIgnoreList.value);
+}
+
+// wipe the ignores
+function resetIgnores() {
+  folderIgnoreList.value = [];
+  fileIgnoreList.value = [];
+  SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
+  SetConfigItemStringList(ConfigItems.FILE_IGNORE, fileIgnoreList.value);
+}
 
 onMounted(() => {
   FolderSelectorControl("", FolderSelectorCommands.INIT, "").then((value) => {
@@ -129,15 +195,26 @@ onMounted(() => {
     currentDir.value = value.Directory;
     foldersInCurrentDir.value = value.Folders;
     filesInCurrentDir.value = value.Files;
-    rawFilesInCurrentDir = value.Files;
+    rawFilesInCurrentDir.value = value.Files;
+    rawFoldersInCurrentDir.value = value.Folders;
     handleShowHidden();
     handleShowFiles();
     console.log(foldersInCurrentDir.value);
+    console.log("raw files and folders: ", rawFilesInCurrentDir);
   });
+  // FIXME: can be cleaned up using generic functions
   GetSharedDirectory().then((dir) => {
     sharedDirectory.value = dir;
   });
-  // Get previously saved ignore list
+  // Get previously saved ignore lists
+  GetConfigValueStringList("file_ignore.jsonl").then((value) => {
+    fileIgnoreList.value = value;
+  });
+  GetConfigValueStringList("folder_ignore.jsonl").then((value) => {
+    console.log("Running get folder ignore");
+    folderIgnoreList.value = value;
+    console.log(folderIgnoreList.value);
+  });
 });
 
 const openFolderSelector = ref<boolean>(false);
@@ -167,17 +244,25 @@ const showFolderButton = ref<boolean>(true);
               Change Shared Folder
             </button>
             <div class="ignore-list">
+              <div>Click on file or folder to have Synk ignore it.</div>
               <FolderSelectorItems
-                :folders="foldersInCurrentDir"
+                :folders="rawFoldersInCurrentDir"
                 :files="rawFilesInCurrentDir"
-                :folder-func="(folder: string) => {}"
+                :folder-func="
+                  (folder: string) => {
+                    updateFolderIgnoreList(folder);
+                  }
+                "
+                :ignore-folders="folderIgnoreList"
+                :ignored-files="fileIgnoreList"
                 :file-func="
                   (file: string) => {
-                    addFileToIgnoreList(file);
+                    updateFileIgnoreList(file);
                   }
                 "
               />
             </div>
+            <button @click="resetIgnores">Reset Ignores</button>
           </div>
         </Transition>
         <Transition name="slide-fade">
@@ -186,6 +271,8 @@ const showFolderButton = ref<boolean>(true);
               <FolderSelectorItems
                 :folders="foldersInCurrentDir"
                 :files="filesInCurrentDir"
+                :ignore-folders="[]"
+                :ignored-files="[]"
                 :folder-func="
                   (folder: string) => {
                     moveDownDir(folder);
@@ -206,7 +293,6 @@ const showFolderButton = ref<boolean>(true);
               </button>
             </div>
             <div class="options-and-current-dir">
-              <!-- <p class="current-directory">{{ currentDir }}</p> -->
               <div class="options-wrapper">
                 <div class="option">
                   <div>Show hidden folders</div>

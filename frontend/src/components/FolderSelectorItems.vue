@@ -8,6 +8,8 @@ defineProps({
   files: { type: Array<string>, required: true },
   folderFunc: { type: Function, required: true },
   fileFunc: { type: Function, required: true },
+  ignoredFiles: { type: Array<string>, required: true },
+  ignoreFolders: { type: Array<string>, required: true },
 });
 
 const emit = defineEmits(["moveDownDir"]);
@@ -19,15 +21,22 @@ function folderClick(folder: string) {
 
 <template>
   <main>
-    <div
-      v-if="folders == undefined || folders.length > 0"
-      v-for="folder in folders"
-    >
+    <div v-if="folders.length > 0" v-for="folder in folders">
       <!-- <FolderItem :text="folder" @click="folderClick(folder)" :file="false" /> -->
-      <FolderItem :text="folder" @click="folderFunc(folder)" :file="false" />
+      <FolderItem
+        :text="folder"
+        @click="folderFunc(folder)"
+        :file="false"
+        :ignored="ignoreFolders.indexOf(folder) != -1"
+      />
     </div>
     <div v-if="files != undefined" v-for="file in files">
-      <FolderItem :text="file" @click="fileFunc(file)" :file="true" />
+      <FolderItem
+        :text="file"
+        @click="fileFunc(file)"
+        :file="true"
+        :ignored="ignoredFiles.indexOf(file) != -1"
+      />
     </div>
   </main>
 </template>
