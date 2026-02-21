@@ -1,6 +1,9 @@
 <script lang="ts" setup>
-import { ref } from "vue";
+import { onMounted, provide, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { GetPeerList } from "../wailsjs/go/main/App";
+
+// Router / Navbar stuff
 
 const openNavBar = ref<boolean>(false);
 let closeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -20,6 +23,25 @@ function mouseOut() {
     closeTimeout = null;
   }, 300);
 }
+
+// Peerlist tracking
+
+const peers = ref<string[] | null>(null);
+const selectedPeers = ref<string[]>([]);
+
+provide("peers", peers)
+
+async function updatePeerList() {
+  const result = await GetPeerList();
+  peers.value = result;
+  console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
+}
+
+onMounted(() => {
+  setInterval(updatePeerList, 3000);
+})
+
+
 </script>
 
 <template>

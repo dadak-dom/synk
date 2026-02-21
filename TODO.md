@@ -1,8 +1,29 @@
 # TODO list: Bugs, new features, notes, etc.
 
+## Known Bugs:
+
+### <span style="color: red">Copying links-to-directories</span>
+
+Copying a file that is a "Link to Folder" results in:
+
+- Nothing when that file is directly within the shared folder
+- If the file is in a subdirectory of the shared folder, the program tries to copy it over, then realizes it's a directory, thus crashing the program
+
+### <span style="color: orange">Peer list gets forgetten when changing pages</span>
+
+Per the title. Find a way to have the peer list persist. Also have it remember the selected peers
+
+### <span style="color: orange">Need dynamic folder/file updates in shraed folder view</span>
+
+Per the title, when a list of folders/files is listed, any changes to the contents should be reflected without needing to change pages
+
 ## New features to add:
 
 Sorted and color-coded by priority
+
+### <span style="color: red">TOP: Approved network list</span>
+
+On startup, check the network name and compare it to the approved network list
 
 ### <span style="color: red">TOP: Notify user when transfer done!</span>
 
@@ -11,7 +32,8 @@ Per the title.
 ### <span style="color: orange">(1) Choose files to ignore</span>
 
 In the folder selector menu, list the files in the currently chosen directory. For each file, if they are clicked, toggle a strike-through on their name. For every file/subfolder that is selected (e.g. <s>test.txt</s> or <s>folder</s>), exempt it from the synk process.<br>
-Almost done, just need to test and make sure that it works + maybe add subfolder support?
+Almost done, just need to test and make sure that it works + maybe add subfolder support?<br>
+Make the changes to the list propogate to peers<br>
 
 ### <span style="color: orange">(2) New config option: Launch on start</span>
 

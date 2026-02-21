@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { GetPeerList } from "../../wailsjs/go/main/App";
 import { RunSynkOnPeer } from "../../wailsjs/go/main/App";
-import { onMounted, ref } from "vue";
+import { inject, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 
 // TODO: This is how I could get the file information from a remote peer.
@@ -13,23 +13,30 @@ async function synk() {
     let sharedFolderContents = await response.json();
     console.log(sharedFolderContents);
     // return
-    RunSynkOnPeer("http://" + p + ":8080", sharedFolderContents);
+    const success = await RunSynkOnPeer("http://" + p + ":8080", sharedFolderContents);
+    if(success) {
+      alert("Synk with " + p + " successful!")
+    } else {
+      alert("Synk with " + p + " failed.")
+    }
   });
 }
 
-const peers = ref<string[] | null>(null);
+// const peers = ref<string[] | null>(null);
 const selectedPeers = ref<string[]>([]);
 
-async function updatePeerList() {
-  const result = await GetPeerList();
-  peers.value = result;
-  console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
-}
+// async function updatePeerList() {
+//   const result = await GetPeerList();
+//   peers.value = result;
+//   console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
+// }
 
-onMounted(() => {
-  console.log("Mounted peerlist");
-  setInterval(updatePeerList, 3000);
-});
+// onMounted(() => {
+//   console.log("Mounted peerlist");
+//   setInterval(updatePeerList, 3000);
+// });
+
+const peers = inject<string[] | null>("peers")
 </script>
 
 <template>
@@ -38,7 +45,7 @@ onMounted(() => {
       <h1 id="logo" class="title">Synk</h1>
       <div class="peer-list-wrapper">
         <p v-if="peers == null">Scanning for peers...</p>
-        <p v-else-if="peers.length == 0">
+        <p v-else-if="peers !== null && peers.length == 0">
           No peers found.
           <RouterLink to="/settings"
             ><span
@@ -61,13 +68,20 @@ onMounted(() => {
         <label v-for="peer in peers" :for="peer">{{ peer }}</label>
       </div>
 
-      <div class="synk-button">
+      <button class="synk-button" v-if="selectedPeers.length > 0">
         <img
           id="main-synk-button"
           @click="synk"
           src="../assets/images/refresh.png"
         />
-      </div>
+      </button>
+      <button class="synk-button-disabled" v-else>
+        <img
+          id="main-synk-button-disabled"
+          @click="synk"
+          src="../assets/images/refresh.png"
+        />
+      </button>
     </div>
   </main>
 </template>
@@ -94,6 +108,23 @@ onMounted(() => {
   border-radius: 200px;
   display: flex;
 }
+.synk-button-disabled {
+  margin-top: 200px;
+  background: linear-gradient(
+    180deg,
+    rgba(148, 148, 148, 0.6) 0,
+    rgba(7, 7, 7, 0.6) 20%,
+    rgba(19, 19, 19, 0.6) 40%,
+    rgba(105, 102, 102, 0.6) 100%
+  );
+  margin: auto;
+  width: 200px;
+  height: 200px;
+  border-radius: 200px;
+  border: 1px solid black;
+  display: flex;
+}
+
 
 .peer-list-wrapper {
   border: solid 1px darkgray;
@@ -103,14 +134,17 @@ onMounted(() => {
 }
 
 #main-synk-button {
-  /* height: 25%; */
-  /* width: 25%; */
   width: 128px;
   margin: auto;
-
   filter: contrast(100) invert();
+}
 
-  /* rotate: 0deg; */
+#main-synk-button-disabled {
+  width: 128px;
+  margin: auto;
+  filter: contrast(100) invert();
+  /* border: 1px solid */
+  opacity: 0.5;
 }
 
 .main-view-wrapper {

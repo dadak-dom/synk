@@ -18,7 +18,7 @@ export function GetSharedDirectory():Promise<string>;
 
 export function Greet(arg1:string):Promise<string>;
 
-export function RunSynkOnPeer(arg1:string,arg2:Record<string, time.Time>):Promise<void>;
+export function RunSynkOnPeer(arg1:string,arg2:Record<string, time.Time>):Promise<boolean>;
 
 export function SetConfigItemStringList(arg1:config.ConfigItem,arg2:Array<string>):Promise<void>;
 

@@ -86,6 +86,11 @@ func (a *App) startup(ctx context.Context) {
 	router.GET("/getSharedFolder", network.GetSharedFolderInfo)
 	router.GET("/getFile", network.GetFile)
 	router.POST("/uploadFile", network.UploadFile)
+	router.POST("/updateFolderIgnoreList", network.UpdateFolderIgnoreList)
+	router.POST("/updateFileIgnoreList", network.UpdateFileIgnoreList)
+	router.GET("/resetIgnoreList", network.ResetIgnoreList)
+	router.GET("/getFolderIgnoreList", network.GetFolderIgnoreList)
+	router.GET("/getFileIgnoreList", network.GetFileIgnoreList)
 	router.Run(myLocalIP + APIport)
 	// TODO: Use the following guide to figure out how to send files back and forth:
 	// https://gin-gonic.com/en/docs/examples/upload-file/single-file/
@@ -104,10 +109,9 @@ func (a *App) GetSharedDirectory() string {
 }
 
 func (a *App) SetConfigItemStringList(item config.ConfigItem, value []string) {
-	fmt.Printf("TESTING: %T\n", value)
+	log.Println("Updating config item: ", item, " with value ", value)
 	config.UpdateUserConfigStringList(item, value)
 }
-
 
 func (a *App) GetConfigValueString(item config.ConfigItem) string {
 	return config.GetConfigValueString(item)
@@ -159,24 +163,15 @@ func (a *App) Greet(name string) string {
 
 // Returns the URL of the remote client that we are connecting to
 func (a *App) GetPeerList() []string {
-	// TODO: Actually implement this. Will probably need some global
-	// variable that tracks what devices we're connected with
-	// return []string{"192.168.0.235:8080"}
-	// return network.LANDiscovery()
 	return peerList
 }
 
-func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time) {
-	// fmt.Println("Running RunSynk on: ", connection, filesToReceive, filesToSend)
-	// fmt.Println("Called RunSynk")
-	// fmt.Println("Received: ", connection, peerFileInfo)
+func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time) bool {
+	// Before comparing any files, make sure that the peer has the same ignore lists
+	// Get the peer's ignore lists; add your files to them, send them back
+	// peer_folder_ignore_list := http.NewRequest("GET", connection + "/getFolderIgnoreList")
 
-	// FIXME: filter out the files in the ignore list config file
-
-	// compare the shared directories
-	// FIXME: The code below this comment is correct. Uncomment once peer discovery works
 	local_shared_folder := config.GetConfigValueString(config.SharedDirectory)
-	// local_shared_folder := "test_shared_dir_local"
 	comparison := utils.CompareSharedDirectories(utils.ScanSharedDirectory(local_shared_folder), peerFileInfo)
 	filesToSend, filesToReceive := comparison["SEND"], comparison["RECEIVE"]
 	fmt.Println("Files to send: ", filesToSend)
@@ -267,6 +262,7 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		// file_content, errReading := os.Open(filepath.Join("test_shared_dir_local", filepath.Base(f)))
 		if errReading != nil {
 			log.Fatal("Could not open file: ", errReading)
+			return false
 		}
 
 		var requestBody bytes.Buffer
@@ -277,26 +273,31 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		part, err := writer.CreateFormFile("file", filepath.Base(f))
 		if err != nil {
 			log.Fatal("Error creating form file: ", err)
+			return false
 		}
 
 		_, err = io.Copy(part, file_content)
 		if err != nil {
 			log.Fatal("Error copying file data: ", err)
+			return false
 		}
 
 		err = writer.WriteField("dir", f)
 		if err != nil {
 			log.Fatal("Error writing form field: ", err)
+			return false
 		}
 
 		err = writer.Close()
 		if err != nil {
 			log.Fatal("Error closing writer: ", err)
+			return false
 		}
 		url := connection + "/uploadFile"
 		req, err := http.NewRequest("POST", url, &requestBody)
 		if err != nil {
 			log.Fatal("Error creating request: ", err)
+			return false
 		}
 
 		req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -304,55 +305,13 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Fatal("Error sending request: ", err)
+			return false
 		}
 		defer resp.Body.Close()
 
 		log.Println("Server responded with status: ", resp.Status)
-
-		// var b bytes.Buffer
-		// w := multipart.NewWriter(&b)
-
-		// values := map[string]io.Reader{
-		// 	"file": file_content,
-		// }
-
-		// log.Println("file_content: ", file_content)
-		// FIXME there is a bug somewhere here. The API has been verified to work via curl
-		// for key, r := range values {
-		// 	var fw io.Writer
-		// 	if x, ok := r.(io.Closer); ok {
-		// 		defer x.Close()
-		// 	}
-		// 	if x, ok := r.(*os.File); ok {
-		// 		if fw, err = w.CreateFormFile(key, x.Name()); err != nil {
-		// 			// return
-		// 		} else {
-		// 			if fw, err = w.CreateFormField(key); err != nil {
-		// 				// return
-		// 			}
-		// 		}
-		// 	}
-		// 	if _, err = io.Copy(fw, r); err != nil {
-		// 		// return err
-		// 		log.Fatal("Error when creating multipart form: ", err)
-		// 	}
-		// }
-		// w.Close()
-		// // send the request
-		// req, err := http.NewRequest("POST", url, &b)
-		// if err != nil {
-		// 	log.Fatal("Error when creating POST request", err)
-		// }
-		// req.Header.Set("Content-Type", w.FormDataContentType())
-		// client := &http.Client{}
-		// resp, err := client.Do(req)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
-		// defer resp.Body.Close()
-		// body, err := io.ReadAll(resp.Body)
-		// fmt.Printf("Status Code: %d\n", resp.StatusCode)
-		// fmt.Printf("Response Body: %s\n", body)
 	}
+	// everything went well, return true
+	return true
 
 }

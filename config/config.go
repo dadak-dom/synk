@@ -3,10 +3,12 @@ package config
 import (
 	"bytes"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/simonfrey/jsonl"
 )
@@ -18,8 +20,8 @@ type ConfigValue interface {
 }
 
 const (
-	SharedDirectory ConfigItem = "shared_directory.txt"
-	FileIgnoreList ConfigItem = "file_ignore.jsonl"
+	SharedDirectory  ConfigItem = "shared_directory.txt"
+	FileIgnoreList   ConfigItem = "file_ignore.jsonl"
 	FolderIgnoreList ConfigItem = "folder_ignore.jsonl"
 	//TODO: add more as needed
 )
@@ -42,7 +44,7 @@ func configSetup() string {
 		log.Fatal("Fatal error when setting up config directory: ", err)
 	}
 	// make all files that need to exist
-	for _, f := range AllConfigItems{
+	for _, f := range AllConfigItems {
 		p := filepath.Join(path, string(f))
 		_, e := os.Stat(p)
 		if os.IsNotExist(e) {
@@ -54,7 +56,7 @@ func configSetup() string {
 
 // FIXME: apparently there is a way to store preferences using:
 // runtime.StoreSet(ctx, key, value)
-// and 
+// and
 // value, err := runtime.StoreGet(ctx, key)
 
 // describes where to find the files for each config item
@@ -65,8 +67,27 @@ func configSetup() string {
 
 var ConfigLocation = configSetup()
 
+func initRand() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
+// return a randomly named file in the config location
+func RandomFileName(file_extension string) string {
+	return filepath.Join(ConfigLocation, randStringRunes(42)+file_extension)
+}
+
 func UpdateUserConfigString(updated_item ConfigItem, value string) {
-		WriteTextFile(ConfigLocation, string(updated_item), value)
+	WriteTextFile(ConfigLocation, string(updated_item), value)
 }
 
 func UpdateUserConfigStringList(updated_item ConfigItem, value []string) {
@@ -112,7 +133,6 @@ func GetConfigValueStringList(value ConfigItem) []string {
 	return make([]string, 0)
 }
 
-
 func WriteTextFile(dir string, fileName string, content string) {
 	err := os.WriteFile(filepath.Join(dir, fileName), []byte(content), 0644)
 	if err != nil {
@@ -131,7 +151,7 @@ func ReadTextFile(dir string, fileName string) string {
 	return string(content)
 }
 
-func  readJsonLinesFile(value ConfigItem) []string {
+func readJsonLinesFile(value ConfigItem) []string {
 	content, err := os.ReadFile(filepath.Join(ConfigLocation, string(value)))
 	if err != nil {
 		log.Fatal("Error reading json lines file: ", err)
@@ -140,7 +160,7 @@ func  readJsonLinesFile(value ConfigItem) []string {
 	o := make([]string, 0)
 	line := ""
 	r.ReadSingleLine(&line)
-	for line != ""  {
+	for line != "" {
 		o = append(o, line)
 		line = ""
 		r.ReadSingleLine(&line)
@@ -148,8 +168,13 @@ func  readJsonLinesFile(value ConfigItem) []string {
 	return o
 }
 
+func OpenJsonLinesConfigFile(dir string) []string {
+	return readJsonLinesFile(ConfigItem(dir))
+}
+
 // given the ending filepath (e.g. SYNK_ROOT_DIRECTORY/test.txt), get the full path
-// 	(e.g. /home/user/test.txt)
+//
+//	(e.g. /home/user/test.txt)
 func ConstructCompleteFilePath(ending string) string {
 	s := GetConfigValueString(SharedDirectory)
 	o := strings.Replace(ending, "SYNK_ROOT_DIRECTORY", s, 1)
@@ -158,4 +183,8 @@ func ConstructCompleteFilePath(ending string) string {
 		o = strings.Replace(o, "/", "\\", -1)
 	}
 	return o
+}
+
+func SynchronizeFolderIgnoreList(peer string) {
+
 }

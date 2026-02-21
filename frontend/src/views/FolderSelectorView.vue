@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
+import { inject, onMounted, ref } from "vue";
 // import what I need from the backend...
 // FIXME: Make it so that I can't select a new folder unless I've moved out of the original dir
 import {
@@ -161,6 +161,18 @@ function updateFileIgnoreList(file: string) {
   fileIgnoreList.value = fileIgnoreList.value.filter((v) => v != "");
   SetConfigItemStringList(ConfigItems.FILE_IGNORE, fileIgnoreList.value);
   console.log(fileIgnoreList.value);
+  // send config to remote peers
+  if (peers !== undefined) {
+    const peerlist = peers?._rawValue;
+    peerlist.forEach((p : string) => {
+      const url = 'http://' + p + ':8080/updateIgnoreList'
+      fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(fileIgnoreList.value),
+        headers: { 'Content-Type': 'application/json' }
+      })
+    });
+  }
 }
 
 function updateFolderIgnoreList(folder: string) {
@@ -178,16 +190,17 @@ function updateFolderIgnoreList(folder: string) {
   // remove empty string
   folderIgnoreList.value = folderIgnoreList.value.filter((v) => v != "");
   SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
+  // propogate changes to peers
+  if (peers !== undefined) {
+    const peerlist = peers?._rawValue;
+    peerlist.forEach((p : string) => {
+      
+    });
+  }
   console.log(folderIgnoreList.value);
 }
 
-// wipe the ignores
-function resetIgnores() {
-  folderIgnoreList.value = [];
-  fileIgnoreList.value = [];
-  SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
-  SetConfigItemStringList(ConfigItems.FILE_IGNORE, fileIgnoreList.value);
-}
+
 
 onMounted(() => {
   FolderSelectorControl("", FolderSelectorCommands.INIT, "").then((value) => {
@@ -219,6 +232,26 @@ onMounted(() => {
 
 const openFolderSelector = ref<boolean>(false);
 const showFolderButton = ref<boolean>(true);
+
+const peers = inject<any>("peers") // really should be type: stirng[], but for some reason that breaks when using ._rawValue
+
+// wipe the ignores
+function resetIgnores() {
+  folderIgnoreList.value = [];
+  fileIgnoreList.value = [];
+  SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
+  SetConfigItemStringList(ConfigItems.FILE_IGNORE, fileIgnoreList.value);
+  console.log("peers: ", typeof peers, peers)
+  console.log(peers._rawValue)
+  const peerlist = peers?._rawValue;
+  if(peers !== undefined && peers !== null) {
+    peerlist.forEach((p : string) => {
+      const url = "http://" + p + ":8080/resetIgnoreList";
+      console.log("url: ", url);
+      fetch(url)
+    });
+  }
+}
 </script>
 
 <template>
@@ -262,7 +295,7 @@ const showFolderButton = ref<boolean>(true);
                 "
               />
             </div>
-            <button @click="resetIgnores">Reset Ignores</button>
+            <button class="change-folder-button" @click="resetIgnores">Reset Ignores</button>
           </div>
         </Transition>
         <Transition name="slide-fade">
@@ -473,7 +506,7 @@ const showFolderButton = ref<boolean>(true);
 }
 
 .change-folder-button {
-  margin-top: 50px;
+  margin-top: 20px;
   background: linear-gradient(
     180deg,
     rgba(148, 148, 148, 0.9) 0,
