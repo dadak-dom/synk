@@ -79,7 +79,7 @@ func (a *App) startup(ctx context.Context) {
 	myLocalIP := network.GetLocalIP()
 	APIport := ":8080"
 	if myLocalIP == "" {
-		log.Fatal("Error: could not find local IP address (192.168 address)")
+		log.Fatal("Error: could not find local IP address (192.168 OR 172 address)")
 	}
 
 	// Send information about the shared folder to the "active" peer
@@ -166,10 +166,73 @@ func (a *App) GetPeerList() []string {
 	return peerList
 }
 
+func ignoreListSynkHelper(peer string) error {
+	f1 := filepath.Join(config.ConfigLocation, string(config.FolderIgnoreList))
+	f2 := filepath.Join(config.ConfigLocation, string(config.FileIgnoreList))
+	// do the same thing for both files and folders
+	for i, f := range [2]string{f1, f2} {
+		of, err := os.Open(f)
+		if err != nil {
+			return err
+		}
+
+		var requestBody bytes.Buffer
+		writer := multipart.NewWriter(&requestBody)
+
+		defer of.Close()
+
+		part, err := writer.CreateFormFile("file", filepath.Base(f))
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(part, of)
+		if err != nil {
+			return err
+		}
+
+		if err != nil {
+			return err
+		}
+
+		err = writer.Close()
+		if err != nil {
+			return err
+		}
+		var url string
+		if i == 0 {
+			url = peer + "/updateFolderIgnoreList"
+		} else {
+			url = peer + "/updateFileIgnoreList"
+		}
+		
+		req, err := http.NewRequest("POST", url, &requestBody)
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		log.Println("Server responded with status: ", resp.Status)
+	}
+
+	return nil
+}
+
 func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time) bool {
 	// Before comparing any files, make sure that the peer has the same ignore lists
 	// Get the peer's ignore lists; add your files to them, send them back
 	// peer_folder_ignore_list := http.NewRequest("GET", connection + "/getFolderIgnoreList")
+	err := ignoreListSynkHelper(connection)
+	if err != nil {
+		log.Fatal("Error when propogating ignore lists: ", err)
+	}
 
 	local_shared_folder := config.GetConfigValueString(config.SharedDirectory)
 	comparison := utils.CompareSharedDirectories(utils.ScanSharedDirectory(local_shared_folder), peerFileInfo)
@@ -232,21 +295,14 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		}
 
 		fmt.Printf("Status Code: %d\n", resp.StatusCode)
-		// fmt.Printf("Body: %s\n", body)
-		// FIXME: actually save the file to the shared directory
-		// will need to copy files to temp folder, complete operation, then delete the temp folder
-		// FIXME: For now, just save the file to the test directory
 		fmt.Println("Trying to write to: ", config.ConstructCompleteFilePath(f))
 		errWrite := os.WriteFile(config.ConstructCompleteFilePath(f), body, 0644)
-		if errWrite != nil {
 
+		if errWrite != nil {
 			fmt.Println("Error when writing:")
 			log.Fatal(errWrite)
 		}
-		// log.Println("File ", filepath.Join("/home/dominik/synk/test_shared_dir_local", filepath.Base(f)), " written successfully.")
-		// os.WriteFile(filepath.Join("C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_local", filepath.Base(f)), body, 0644)
 	}
-	// log.Fatal("DONE")
 
 	log.Println("===========================\nRECEIVING DONE, NOW SENDING\n==========================")
 	log.Println("Files to send: ", filesToSend)
@@ -259,7 +315,7 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		// get file that needs to be uploaded to peer
 		// FIXME: The line below is correct. Uncomment once done prototyping
 		file_content, errReading := os.Open(config.ConstructCompleteFilePath(f))
-		// file_content, errReading := os.Open(filepath.Join("test_shared_dir_local", filepath.Base(f)))
+		
 		if errReading != nil {
 			log.Fatal("Could not open file: ", errReading)
 			return false

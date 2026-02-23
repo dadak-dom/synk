@@ -164,13 +164,13 @@ function updateFileIgnoreList(file: string) {
   // send config to remote peers
   if (peers !== undefined) {
     const peerlist = peers?._rawValue;
-    peerlist.forEach((p : string) => {
-      const url = 'http://' + p + ':8080/updateIgnoreList'
+    peerlist.forEach((p: string) => {
+      const url = "http://" + p + ":8080/updateFileIgnoreList";
       fetch(url, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(fileIgnoreList.value),
-        headers: { 'Content-Type': 'application/json' }
-      })
+        headers: { "Content-Type": "application/json" },
+      });
     });
   }
 }
@@ -190,17 +190,20 @@ function updateFolderIgnoreList(folder: string) {
   // remove empty string
   folderIgnoreList.value = folderIgnoreList.value.filter((v) => v != "");
   SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
-  // propogate changes to peers
+  // send config to remote peers
   if (peers !== undefined) {
     const peerlist = peers?._rawValue;
-    peerlist.forEach((p : string) => {
-      
+    peerlist.forEach((p: string) => {
+      const url = "http://" + p + ":8080/updateFolderIgnoreList";
+      fetch(url, {
+        method: "POST",
+        body: JSON.stringify(folderIgnoreList.value),
+        headers: { "Content-Type": "application/json" },
+      });
     });
   }
   console.log(folderIgnoreList.value);
 }
-
-
 
 onMounted(() => {
   FolderSelectorControl("", FolderSelectorCommands.INIT, "").then((value) => {
@@ -233,7 +236,7 @@ onMounted(() => {
 const openFolderSelector = ref<boolean>(false);
 const showFolderButton = ref<boolean>(true);
 
-const peers = inject<any>("peers") // really should be type: stirng[], but for some reason that breaks when using ._rawValue
+const peers = inject<any>("peers"); // really should be type: stirng[], but for some reason that breaks when using ._rawValue
 
 // wipe the ignores
 function resetIgnores() {
@@ -241,14 +244,14 @@ function resetIgnores() {
   fileIgnoreList.value = [];
   SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
   SetConfigItemStringList(ConfigItems.FILE_IGNORE, fileIgnoreList.value);
-  console.log("peers: ", typeof peers, peers)
-  console.log(peers._rawValue)
+  console.log("peers: ", typeof peers, peers);
+  console.log(peers._rawValue);
   const peerlist = peers?._rawValue;
-  if(peers !== undefined && peers !== null) {
-    peerlist.forEach((p : string) => {
+  if (peers !== undefined && peers !== null) {
+    peerlist.forEach((p: string) => {
       const url = "http://" + p + ":8080/resetIgnoreList";
       console.log("url: ", url);
-      fetch(url)
+      fetch(url);
     });
   }
 }
@@ -295,7 +298,9 @@ function resetIgnores() {
                 "
               />
             </div>
-            <button class="change-folder-button" @click="resetIgnores">Reset Ignores</button>
+            <button class="change-folder-button" @click="resetIgnores">
+              Reset Ignores
+            </button>
           </div>
         </Transition>
         <Transition name="slide-fade">

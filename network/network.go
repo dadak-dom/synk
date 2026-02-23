@@ -69,11 +69,12 @@ func GetFileIgnoreList(c *gin.Context) {
 	c.File(fp)
 }
 
-// receives an individual item to add or remove from the
+// receives an individual item to add or remove from the ignore list
+// FIXME: next two functions can be abstracted later
 func UpdateFileIgnoreList(c *gin.Context) {
 	// step 1: receive the config file & save it to a temp config location
 	file, _ := c.FormFile("file")
-	temp_file := config.RandomFileName(".json")
+	temp_file := config.RandomFileName(".jsonl")
 	c.SaveUploadedFile(file, temp_file)
 	// step 2: compare the remote peer's list to your own & add any files that are not in your list already
 	peer_file := config.OpenJsonLinesConfigFile(temp_file)
@@ -87,11 +88,25 @@ func UpdateFileIgnoreList(c *gin.Context) {
 	// step 3: update config file & delete temp
 	os.Remove(temp_file)
 	config.UpdateUserConfigStringList(config.FileIgnoreList, new_local_file)
-	// TODO: next steps: make the frontend actually call the API
 }
 
 func UpdateFolderIgnoreList(c *gin.Context) {
-
+	// step 1: receive the config file & save it to a temp config location
+	file, _ := c.FormFile("file")
+	temp_file := config.RandomFileName(".jsonl")
+	c.SaveUploadedFile(file, temp_file)
+	// step 2: compare the remote peer's list to your own & add any files that are not in your list already
+	peer_file := config.OpenJsonLinesConfigFile(temp_file)
+	local_file := config.GetConfigValueStringList(config.FolderIgnoreList)
+	new_local_file := slices.Clone(local_file)
+	for _, peer_item := range peer_file {
+		if !slices.Contains(local_file, peer_item) {
+			new_local_file = append(new_local_file, peer_item)
+		}
+	}
+	// step 3: update config file & delete temp
+	os.Remove(temp_file)
+	config.UpdateUserConfigStringList(config.FolderIgnoreList, new_local_file)
 }
 
 // func UpdateIgnoreList(c *gin.Context) {

@@ -184,7 +184,3 @@ func ConstructCompleteFilePath(ending string) string {
 	}
 	return o
 }
-
-func SynchronizeFolderIgnoreList(peer string) {
-
-}
