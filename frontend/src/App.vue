@@ -1,7 +1,11 @@
 <script lang="ts" setup>
-import { onMounted, provide, ref } from "vue";
+import { onMounted, provide, reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { GetPeerList } from "../wailsjs/go/main/App";
+import {
+  GetPeerList,
+  GetTheme,
+  SetConfigItemString,
+} from "../wailsjs/go/main/App";
 
 // Router / Navbar stuff
 
@@ -29,7 +33,7 @@ function mouseOut() {
 const peers = ref<string[] | null>(null);
 const selectedPeers = ref<string[]>([]);
 
-provide("peers", peers)
+provide("peers", peers);
 
 async function updatePeerList() {
   const result = await GetPeerList();
@@ -37,11 +41,45 @@ async function updatePeerList() {
   console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
 }
 
+// Themes
+import { Theme, GetThemeInterface } from "./interfaces/theme";
+
+const theme = ref<Theme>(GetThemeInterface("Dark"));
+
+const themeName = ref<string>(""); // CSS variables
+const firstColor = ref<string>("");
+const secondColor = ref<string>("");
+const thirdColor = ref<string>("");
+const fourthColor = ref<string>("");
+const textColor = ref<string>("");
+const themeFilter = ref<string>("");
+
+provide("theme", theme.value);
+
+function updateTheme(th: string) {
+  let new_theme = GetThemeInterface(th);
+  // CSS variables to update
+  firstColor.value = new_theme.firstColor;
+  secondColor.value = new_theme.secondColor;
+  thirdColor.value = new_theme.thirdColor;
+  fourthColor.value = new_theme.fourthColor;
+  textColor.value = new_theme.textColor;
+  themeName.value = new_theme.name;
+  themeFilter.value = new_theme.filter;
+
+  // ref to update
+  theme.value.name = new_theme.name;
+  // Save the choice to config
+  SetConfigItemString("theme.txt", th);
+}
+
 onMounted(() => {
+  console.log("Mounting App.vue...");
+  GetTheme().then((th) => {
+    updateTheme(th);
+  });
   setInterval(updatePeerList, 3000);
-})
-
-
+});
 </script>
 
 <template>
@@ -64,7 +102,16 @@ onMounted(() => {
       <img id="navbar-burger" src="./assets/images/navbar_icon.png" />
     </nav>
   </Transition>
-  <router-view v-slot="{ Component }">
+  <router-view
+    v-slot="{ Component }"
+    @update-theme="updateTheme"
+    :firstColor="firstColor"
+    :secondColor="secondColor"
+    :thirdColor="thirdColor"
+    :fourthColor="fourthColor"
+    :textColor="textColor"
+    :imageFilter="themeFilter"
+  >
     <transition name="fade" mode="out-in">
       <component :is="Component" :key="$route.path"></component>
     </transition>
@@ -75,6 +122,15 @@ onMounted(() => {
 main {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  background: linear-gradient(
+    200deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
+  );
+  color: v-bind(textColor);
 }
 
 .outer-view {
@@ -93,13 +149,12 @@ nav {
   gap: 10px;
   margin-top: 10px;
   margin-left: 10px;
-  /* background-color: rgba(30, 30, 30, 0.4); */
   background: linear-gradient(
-    180deg,
-    rgba(148, 148, 148, 0.9) 0,
-    rgba(7, 7, 7, 0.93) 20%,
-    rgba(19, 19, 19, 0.9) 40%,
-    rgba(105, 102, 102, 0.93) 100%
+    200deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
   );
   border: solid 1px grey;
   border-radius: 10px;
@@ -108,12 +163,12 @@ nav {
 
 nav .nav-item img {
   width: 32px;
-  filter: invert();
+  filter: v-bind(themeFilter);
 }
 
 nav #navbar-burger {
   width: 32px;
-  filter: invert();
+  filter: v-bind(themeFilter);
   cursor: pointer;
 }
 
@@ -132,29 +187,14 @@ nav #navbar-burger {
   height: 100%;
   max-width: 80%;
   margin: auto;
-  /* background-color: green; */
 }
 
 .wrapper {
-  /* max-width: 80vw; */
   height: 90%;
   margin: auto;
   display: flex;
   justify-content: space-evenly;
-  /* flex-grow: 0; */
 }
-
-/* #logo {
-  display: block;
-  width: 50%;
-  height: 50%;
-  margin: auto;
-  padding: 10% 0 0;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  background-origin: content-box;
-} */
 
 .slide-fade-enter-active {
   transition: all 0.3s ease-out;

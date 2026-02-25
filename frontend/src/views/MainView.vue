@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { GetPeerList } from "../../wailsjs/go/main/App";
 import { RunSynkOnPeer } from "../../wailsjs/go/main/App";
-import { inject, onMounted, ref } from "vue";
+import { inject, ref } from "vue";
 import { RouterLink } from "vue-router";
 
 // TODO: This is how I could get the file information from a remote peer.
@@ -13,30 +12,30 @@ async function synk() {
     let sharedFolderContents = await response.json();
     console.log(sharedFolderContents);
     // return
-    const success = await RunSynkOnPeer("http://" + p + ":8080", sharedFolderContents);
-    if(success) {
-      alert("Synk with " + p + " successful!")
+    const success = await RunSynkOnPeer(
+      "http://" + p + ":8080",
+      sharedFolderContents,
+    );
+    if (success) {
+      alert("Synk with " + p + " successful!");
     } else {
-      alert("Synk with " + p + " failed.")
+      alert("Synk with " + p + " failed.");
     }
   });
 }
-
-// const peers = ref<string[] | null>(null);
 const selectedPeers = ref<string[]>([]);
 
-// async function updatePeerList() {
-//   const result = await GetPeerList();
-//   peers.value = result;
-//   console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
-// }
+const peers = inject<string[] | null>("peers");
 
-// onMounted(() => {
-//   console.log("Mounted peerlist");
-//   setInterval(updatePeerList, 3000);
-// });
-
-const peers = inject<string[] | null>("peers")
+// Theme piping
+defineProps([
+  "firstColor",
+  "secondColor",
+  "thirdColor",
+  "fourthColor",
+  "textColor",
+  "imageFilter",
+]);
 </script>
 
 <template>
@@ -48,14 +47,7 @@ const peers = inject<string[] | null>("peers")
         <p v-else-if="peers !== null && peers.length == 0">
           No peers found.
           <RouterLink to="/settings"
-            ><span
-              style="
-                border-bottom: dotted 1px gray;
-                color: white;
-                text-decoration: none;
-              "
-              >Check your connection.</span
-            ></RouterLink
+            ><span>Check your connection.</span></RouterLink
           >
         </p>
         <input
@@ -97,10 +89,10 @@ const peers = inject<string[] | null>("peers")
   margin-top: 200px;
   background: linear-gradient(
     180deg,
-    rgba(148, 148, 148, 0.6) 0,
-    rgba(7, 7, 7, 0.6) 20%,
-    rgba(19, 19, 19, 0.6) 40%,
-    rgba(105, 102, 102, 0.6) 100%
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
   );
   margin: auto;
   width: 200px;
@@ -111,11 +103,11 @@ const peers = inject<string[] | null>("peers")
 .synk-button-disabled {
   margin-top: 200px;
   background: linear-gradient(
-    180deg,
-    rgba(148, 148, 148, 0.6) 0,
-    rgba(7, 7, 7, 0.6) 20%,
-    rgba(19, 19, 19, 0.6) 40%,
-    rgba(105, 102, 102, 0.6) 100%
+    200deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
   );
   margin: auto;
   width: 200px;
@@ -125,25 +117,23 @@ const peers = inject<string[] | null>("peers")
   display: flex;
 }
 
-
 .peer-list-wrapper {
   border: solid 1px darkgray;
   width: 80%;
   margin: auto auto 60px auto;
-  background-color: rgba(40, 40, 40, 0.5);
+  background-color: v-bind(firstColor);
 }
 
 #main-synk-button {
   width: 128px;
   margin: auto;
-  filter: contrast(100) invert();
+  filter: v-bind(imageFilter);
 }
 
 #main-synk-button-disabled {
   width: 128px;
   margin: auto;
   filter: contrast(100) invert();
-  /* border: 1px solid */
   opacity: 0.5;
 }
 
@@ -157,11 +147,11 @@ const peers = inject<string[] | null>("peers")
 #logo {
   font-family: "FrutigerAero";
   background: linear-gradient(
-    183deg,
-    rgba(148, 148, 148, 0.9) 0,
-    rgba(7, 7, 7, 0.93) 20%,
-    rgba(19, 19, 19, 0.9) 40%,
-    rgba(30, 30, 30, 0.93) 100%
+    180deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
   );
   margin: 40px auto;
   width: 50%;

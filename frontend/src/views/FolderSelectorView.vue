@@ -255,10 +255,19 @@ function resetIgnores() {
     });
   }
 }
+
+// Theme piping
+const props = defineProps([
+  "firstColor",
+  "secondColor",
+  "thirdColor",
+  "fourthColor",
+  "textColor",
+]);
 </script>
 
 <template>
-  <div class="outer-view">
+  <main class="outer-view">
     <div class="folder-selection-view">
       <div class="folder-view-wrapper">
         <h1 class="title">Shared Folder</h1>
@@ -317,6 +326,11 @@ function resetIgnores() {
                   }
                 "
                 :file-func="(file: string) => {}"
+                :firstColor="firstColor"
+                :secondColor="secondColor"
+                :thirdColor="thirdColor"
+                :fourthColor="fourthColor"
+                :textColor="textColor"
                 @move-down-dir="moveDownDir"
               />
             </div>
@@ -362,7 +376,7 @@ function resetIgnores() {
         </Transition>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <style scoped>
@@ -388,11 +402,19 @@ function resetIgnores() {
   width: 100%;
   border-left: 1px solid grey;
   border-right: 1px solid grey;
-  background: rgba(20, 20, 20, 0.9);
+  /* background: rgba(20, 20, 20, 0.9);
+   */
+  background: v-bind(firstColor);
+  color: v-bind(textColor);
 }
 
 .change-folder-button-wrapper {
-  background-color: rgba(30, 30, 30, 0.8);
+  /* background-color: rgba(30, 30, 30, 0.8); */
+  background-color: linear-gradient(
+    200deg,
+    v-bind(firstColor),
+    v-bind(fourthColor)
+  );
   border-left: 1px solid grey;
   border-right: 1px solid grey;
   width: 100%;
@@ -402,46 +424,37 @@ function resetIgnores() {
 }
 
 .change-folder-button-wrapper .change-folder-button {
-  color: white;
   padding: 20px;
   border: 2px solid rgb(33, 33, 33);
   border-radius: 10px;
   margin-bottom: 40px;
+  margin-top: 20px;
+  background: linear-gradient(
+    200deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
+  );
+  color: v-bind(textColor);
 }
 
 .shared-directory {
-  /* margin: 10%; */
   background: linear-gradient(
-    180deg,
-    rgba(148, 148, 148, 0.9) 0,
-    rgba(7, 7, 7, 0.93) 20%,
-    rgba(19, 19, 19, 0.9) 40%,
-    rgba(30, 30, 30, 0.93) 100%
+    200deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
   );
-  /* padding: 20px; */
   padding-top: 20px;
   padding-bottom: 20px;
-  /* margin-top: 10%; */
   width: 100%;
   border-left: 1px solid grey;
   border-right: 1px solid grey;
   border-top: 1px solid grey;
   border-top-left-radius: 40px;
   border-top-right-radius: 40px;
-}
-
-.folder-view-spacer {
-  padding-top: 20px;
-  background: linear-gradient(
-    180deg,
-    rgba(7, 7, 7, 0.93) 0,
-    rgba(19, 19, 19, 0.9) 20%,
-    rgba(71, 71, 71, 0.9) 40%,
-    rgba(148, 148, 148, 0.9) 100%
-  );
-  border-left: 1px solid grey;
-  border-right: 1px solid grey;
-  width: 100%;
 }
 
 .slide-fade-enter-active {
@@ -476,18 +489,12 @@ function resetIgnores() {
 }
 
 .options-and-current-dir .option {
-  color: white;
+  /* color: white; */
 }
 
 .current-directory {
-  color: white;
-  /* border: solid black 2px; */
-  /* padding: 10px; */
-  /* background-color: lightgrey;
-   */
   animation: blink 0.5s ease-in-out;
   animation-iteration-count: infinite;
-  /* border: solid 1px rbga(0, 0, 0, 0); */
   border-width: 1px;
   border-style: solid;
 }
@@ -510,24 +517,10 @@ function resetIgnores() {
   flex-direction: row;
 }
 
-.change-folder-button {
-  margin-top: 20px;
-  background: linear-gradient(
-    180deg,
-    rgba(148, 148, 148, 0.9) 0,
-    rgba(7, 7, 7, 0.93) 20%,
-    rgba(19, 19, 19, 0.9) 40%,
-    rgba(105, 102, 102, 0.93) 100%
-  );
-}
-
 .nav-button-group .nav-button {
-  background-color: lightgrey;
-  /* width: 50%; */
-  /* margin: auto; */
   height: 100%;
-  color: white;
-  background-color: rgba(45, 44, 44, 0.7);
+  background: linear-gradient(v-bind(firstColor), v-bind(thirdColor));
+  color: v-bind(textColor);
 }
 
 .folder-selection-box {

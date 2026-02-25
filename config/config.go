@@ -23,6 +23,7 @@ const (
 	SharedDirectory  ConfigItem = "shared_directory.txt"
 	FileIgnoreList   ConfigItem = "file_ignore.jsonl"
 	FolderIgnoreList ConfigItem = "folder_ignore.jsonl"
+	Theme ConfigItem = "theme.txt"
 	//TODO: add more as needed
 )
 
@@ -30,6 +31,7 @@ var AllConfigItems = []ConfigItem{
 	SharedDirectory,
 	FileIgnoreList,
 	FolderIgnoreList,
+	Theme,
 }
 
 // Get the config file location
@@ -107,14 +109,10 @@ func writeJsonLinesFile(dir string, fileName string, values []string) {
 
 func GetConfigValueString(value ConfigItem) string {
 	switch value {
-	case SharedDirectory:
+	case SharedDirectory, Theme:
 		r := ReadTextFile(ConfigLocation, string(value))
 		log.Println("Config value for: ", value, r)
 		return r
-	// TODO: if more cases come, add them here
-	// case FolderIgnoreList, FileIgnoreList:
-	// 	log.Println("Config value for: ", value)
-	// 	return readJsonLinesFile(value)
 	default:
 		log.Fatal("Missing case in GetConfigValueString")
 	}

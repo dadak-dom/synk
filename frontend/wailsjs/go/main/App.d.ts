@@ -16,9 +16,13 @@ export function GetPeerList():Promise<Array<string>>;
 
 export function GetSharedDirectory():Promise<string>;
 
+export function GetTheme():Promise<string>;
+
 export function Greet(arg1:string):Promise<string>;
 
 export function RunSynkOnPeer(arg1:string,arg2:Record<string, time.Time>):Promise<boolean>;
+
+export function SetConfigItemString(arg1:config.ConfigItem,arg2:string):Promise<void>;
 
 export function SetConfigItemStringList(arg1:config.ConfigItem,arg2:Array<string>):Promise<void>;
 

@@ -10,6 +10,11 @@ defineProps({
   fileFunc: { type: Function, required: true },
   ignoredFiles: { type: Array<string>, required: true },
   ignoreFolders: { type: Array<string>, required: true },
+  firstColor: { type: String, required: false },
+  secondColor: { type: String, required: false },
+  thirdColor: { type: String, required: false },
+  fourthColor: { type: String, required: false },
+  textColor: { type: String, required: false },
 });
 
 const emit = defineEmits(["moveDownDir"]);
@@ -22,12 +27,12 @@ function folderClick(folder: string) {
 <template>
   <main>
     <div v-if="folders.length > 0" v-for="folder in folders">
-      <!-- <FolderItem :text="folder" @click="folderClick(folder)" :file="false" /> -->
       <FolderItem
         :text="folder"
         @click="folderFunc(folder)"
         :file="false"
         :ignored="ignoreFolders.indexOf(folder) != -1"
+        :textColor="textColor"
       />
     </div>
     <div v-if="files != undefined" v-for="file in files">

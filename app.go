@@ -108,6 +108,11 @@ func (a *App) GetSharedDirectory() string {
 	return t
 }
 
+func (a *App) SetConfigItemString(item config.ConfigItem, value string) {
+	log.Println("Updating config item: ", item, " with value ", value)
+	config.UpdateUserConfigString(item, value)
+}
+
 func (a *App) SetConfigItemStringList(item config.ConfigItem, value []string) {
 	log.Println("Updating config item: ", item, " with value ", value)
 	config.UpdateUserConfigStringList(item, value)
@@ -164,6 +169,11 @@ func (a *App) Greet(name string) string {
 // Returns the URL of the remote client that we are connecting to
 func (a *App) GetPeerList() []string {
 	return peerList
+}
+
+// Return the current theme in the config
+func (a *App) GetTheme() string {
+	return config.GetConfigValueString(config.Theme)
 }
 
 func ignoreListSynkHelper(peer string) error {
