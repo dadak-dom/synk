@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"synk/config"
@@ -39,10 +40,10 @@ func GetLocalIP() string {
 				ip := ipnet.IP.To4().String()
 				log.Println("Potential IP: ", ip)
 				// if on Windows, don't use 192.168.56.X, as that will give the wrong IP for the API
-				if runtime.GOOS == "windows" && ip == "192.168.56.1" { // FIXME: This is a bandaid solution. 
+				if runtime.GOOS == "windows" && ip == "192.168.56.1" { // FIXME: This is a bandaid solution.
 					continue
 				}
-				if strings.HasPrefix(ip, "192.168") ||  strings.HasPrefix(ip, "172."){
+				if strings.HasPrefix(ip, "192.168") || strings.HasPrefix(ip, "172.") {
 					return ip
 				}
 				// return ipnet.IP.String()
@@ -54,8 +55,78 @@ func GetLocalIP() string {
 }
 
 func GetSharedFolderInfo(c *gin.Context) {
-	sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValue(config.SharedDirectory))
-	c.IndentedJSON(http.StatusOK, sharedDirectoryInfo)
+	sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValueString(config.SharedDirectory))
+	c.JSON(http.StatusOK, sharedDirectoryInfo)
+}
+
+func GetFolderIgnoreList(c *gin.Context) {
+	fp := filepath.Join(config.ConfigLocation, string(config.FolderIgnoreList))
+	c.File(fp)
+}
+
+func GetFileIgnoreList(c *gin.Context) {
+	fp := filepath.Join(config.ConfigLocation, string(config.FileIgnoreList))
+	c.File(fp)
+}
+
+// receives an individual item to add or remove from the ignore list
+// FIXME: next two functions can be abstracted later
+func UpdateFileIgnoreList(c *gin.Context) {
+	// step 1: receive the config file & save it to a temp config location
+	file, _ := c.FormFile("file")
+	temp_file := config.RandomFileName(".jsonl")
+	c.SaveUploadedFile(file, temp_file)
+	// step 2: compare the remote peer's list to your own & add any files that are not in your list already
+	peer_file := config.OpenJsonLinesConfigFile(temp_file)
+	local_file := config.GetConfigValueStringList(config.FileIgnoreList)
+	new_local_file := slices.Clone(local_file)
+	for _, peer_item := range peer_file {
+		if !slices.Contains(local_file, peer_item) {
+			new_local_file = append(new_local_file, peer_item)
+		}
+	}
+	// step 3: update config file & delete temp
+	os.Remove(temp_file)
+	config.UpdateUserConfigStringList(config.FileIgnoreList, new_local_file)
+}
+
+func UpdateFolderIgnoreList(c *gin.Context) {
+	// step 1: receive the config file & save it to a temp config location
+	file, _ := c.FormFile("file")
+	temp_file := config.RandomFileName(".jsonl")
+	c.SaveUploadedFile(file, temp_file)
+	// step 2: compare the remote peer's list to your own & add any files that are not in your list already
+	peer_file := config.OpenJsonLinesConfigFile(temp_file)
+	local_file := config.GetConfigValueStringList(config.FolderIgnoreList)
+	new_local_file := slices.Clone(local_file)
+	for _, peer_item := range peer_file {
+		if !slices.Contains(local_file, peer_item) {
+			new_local_file = append(new_local_file, peer_item)
+		}
+	}
+	// step 3: update config file & delete temp
+	os.Remove(temp_file)
+	config.UpdateUserConfigStringList(config.FolderIgnoreList, new_local_file)
+}
+
+// func UpdateIgnoreList(c *gin.Context) {
+// 	file, _ := c.FormFile("file")
+// 	var isFolderString string = c.PostForm("isFolder")
+// 	if isFolderString == "true" {
+// 		log.Println("Received update to FOLDER ignore list...")
+// 		c.SaveUploadedFile(file, filepath.Join(config.ConfigLocation, string(config.FolderIgnoreList)))
+// 	} else {
+// 		log.Println("Received update to FILE ignore list...")
+// 		c.SaveUploadedFile(file, filepath.Join(config.ConfigLocation, string(config.FileIgnoreList)))
+// 	}
+// 	c.String(http.StatusOK, fmt.Sprintf("Ignore list upated."))
+// }
+
+func ResetIgnoreList(c *gin.Context) {
+	log.Println("Received request to reset ignore lists...")
+	config.UpdateUserConfigStringList(config.FileIgnoreList, make([]string, 0))
+	config.UpdateUserConfigStringList(config.FolderIgnoreList, make([]string, 0))
+	c.String(http.StatusOK, fmt.Sprintf("Ignore lists reset"))
 }
 
 func UploadFile(c *gin.Context) {
@@ -69,12 +140,9 @@ func UploadFile(c *gin.Context) {
 	}
 	log.Println("UPLOAD FILE RECEIVED: ", file.Filename, " IN DIRECTORY: ", dir)
 
-	// FIXME : make this save to the real shared dir
-	// c.SaveUploadedFile(file, "C:\\Users\\dadak\\Desktop\\personal-projects\\synk\\test_shared_dir_remote\\"+file.Filename)
-	// c.SaveUploadedFile(file, "/home/dominik/synk/test_shared_dir_remote"+file.Filename)
 	log.Println("SAVING TO: ", config.ConstructCompleteFilePath(dir))
 	c.SaveUploadedFile(file, config.ConstructCompleteFilePath(dir))
-	// c.SaveUploadedFile(file, config.GetConfigValue())
+
 	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 }
 
@@ -83,7 +151,7 @@ func GetFile(c *gin.Context) {
 	// i := c.Param("index")
 	i, _ := strconv.Atoi(c.Query("index"))
 	// get list of files in shared folder
-	sharedFiles := utils.ListFilesInSharedDirectory(config.GetConfigValue(config.SharedDirectory))
+	sharedFiles := utils.ListFilesInSharedDirectory(config.GetConfigValueString(config.SharedDirectory))
 	fmt.Println("FILE THAT I WOULD SEND: , ", sharedFiles[i], "i = ", i, "param=", c.Query("index"))
 	// I need to be able to construct the path to the file in question
 	complete_path := config.ConstructCompleteFilePath(sharedFiles[i])

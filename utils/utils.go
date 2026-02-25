@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"synk/config"
 	"time"
 )
 
@@ -70,7 +72,26 @@ func ScanSharedDirectory(dir string) map[string]time.Time {
 	delete(output, "SYNK_ROOT_DIRECTORY") // Root folder info doesn't matter
 	fmt.Println(DirMapToString(output))
 
-	return output
+	return removeIgnoredFilesAndFolders(output)
+}
+
+func removeIgnoredFilesAndFolders(m map[string]time.Time) map[string]time.Time{
+	// get config info
+	o := m
+	ignore_files := config.GetConfigValueStringList(config.FileIgnoreList)
+	ignore_folders := config.GetConfigValueStringList(config.FolderIgnoreList)
+	for _, f := range ignore_files {
+		delete(o, filepath.Join("SYNK_ROOT_DIRECTORY", f))
+	}
+	for _, f := range ignore_folders {
+		for key := range o {
+			match, _ := regexp.MatchString("SYNK_ROOT_DIRECTORY[\\\\/]" + regexp.QuoteMeta(f), key)
+			if match {
+				delete(o, key)
+			}
+		}
+	}
+	return o
 }
 
 // given a slice and a value, return the index of the first match

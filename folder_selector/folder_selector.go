@@ -18,6 +18,7 @@ const (
 	GoHome
 	Init
 	Select
+	Cancel
 )
 
 type FolderSelectorResult struct {
@@ -63,7 +64,7 @@ func ListFoldersInDirectory(dir string) []string {
 }
 
 func InitializeFolderSelector() FolderSelectorResult {
-	c := config.GetConfigValue(config.SharedDirectory)
+	c := config.GetConfigValueString(config.SharedDirectory)
 	d, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal("Error initializing folder selector: ", err)
@@ -120,7 +121,12 @@ func GoToHomeDir() FolderSelectorResult {
 	return FolderSelectorResult{Directory: startDir, Files: ListFilesInDirectory(startDir), Folders: ListFoldersInDirectory(startDir)}
 }
 
+func CancelDir() FolderSelectorResult {
+	sd := config.GetConfigValueString(config.SharedDirectory)
+	return FolderSelectorResult{Directory: sd, Files: ListFilesInDirectory(sd), Folders: ListFoldersInDirectory(sd)}
+}
+
 // Once a folder is selected, it's saved to the config folder
 func SelectSharedFolder(dir string) {
-	config.UpdateUserConfig(config.SharedDirectory, dir)
+	config.UpdateUserConfigString(config.SharedDirectory, dir)
 }

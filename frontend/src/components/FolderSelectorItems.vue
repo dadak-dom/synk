@@ -4,8 +4,17 @@
 import FolderItem from "./FolderItem.vue";
 
 defineProps({
-  folders: Array<string>,
-  files: Array<string>,
+  folders: { type: Array<string>, required: true },
+  files: { type: Array<string>, required: true },
+  folderFunc: { type: Function, required: true },
+  fileFunc: { type: Function, required: true },
+  ignoredFiles: { type: Array<string>, required: true },
+  ignoreFolders: { type: Array<string>, required: true },
+  firstColor: { type: String, required: false },
+  secondColor: { type: String, required: false },
+  thirdColor: { type: String, required: false },
+  fourthColor: { type: String, required: false },
+  textColor: { type: String, required: false },
 });
 
 const emit = defineEmits(["moveDownDir"]);
@@ -17,14 +26,22 @@ function folderClick(folder: string) {
 
 <template>
   <main>
-    <div
-      v-if="folders == undefined || folders.length > 0"
-      v-for="folder in folders"
-    >
-      <FolderItem :text="folder" @click="folderClick(folder)" :file="false" />
+    <div v-if="folders.length > 0" v-for="folder in folders">
+      <FolderItem
+        :text="folder"
+        @click="folderFunc(folder)"
+        :file="false"
+        :ignored="ignoreFolders.indexOf(folder) != -1"
+        :textColor="textColor"
+      />
     </div>
     <div v-if="files != undefined" v-for="file in files">
-      <FolderItem :text="file" :file="true" />
+      <FolderItem
+        :text="file"
+        @click="fileFunc(file)"
+        :file="true"
+        :ignored="ignoredFiles.indexOf(file) != -1"
+      />
     </div>
   </main>
 </template>

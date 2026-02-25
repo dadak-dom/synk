@@ -6,6 +6,7 @@ require (
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
 	github.com/schollz/peerdiscovery v1.7.6
+	github.com/simonfrey/jsonl v0.0.0-20240904112901-935399b9a740
 	github.com/wailsapp/wails/v2 v2.11.0
 )
 

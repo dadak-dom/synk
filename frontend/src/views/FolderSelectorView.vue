@@ -1,28 +1,33 @@
 <script lang="ts" setup>
-import { onMounted, onUpdated, ref, useTemplateRef } from "vue";
+import { inject, onMounted, ref } from "vue";
 // import what I need from the backend...
+// FIXME: Make it so that I can't select a new folder unless I've moved out of the original dir
 import {
   FolderSelectorControl,
+  GetConfigValueString,
+  GetConfigValueStringList,
   GetSharedDirectory,
+  SetConfigItemStringList,
 } from "../../wailsjs/go/main/App";
 import FolderSelectorItems from "../components/FolderSelectorItems.vue";
 
+// Folder and file data
 const enableSelector = ref(false);
 const currentDir = ref();
 const foldersInCurrentDir = ref<string[]>([]);
 const filesInCurrentDir = ref<string[]>([]);
-var rawFoldersInCurrentDir = <string[]>[];
-var rawFilesInCurrentDir = <string[]>[];
+const rawFoldersInCurrentDir = ref<string[]>([]);
+const rawFilesInCurrentDir = ref<string[]>([]);
 
 const sharedDirectory = ref("");
+
+// Ignore list
+const fileIgnoreList = ref<string[]>([]);
+const folderIgnoreList = ref<string[]>([]);
 
 // Options for viewing the file selector:
 const showHiddenFiles = ref(false);
 const showFiles = ref(false);
-
-// Modal settings
-// const modal = useTemplateRef("modal");
-const modalOpacity = ref("0");
 
 const FolderSelectorCommands = {
   MOVE_UP: 0,
@@ -30,6 +35,13 @@ const FolderSelectorCommands = {
   GO_HOME: 2,
   INIT: 3,
   SELECT: 4,
+  CANCEL: 5,
+};
+
+const ConfigItems: { [x: string]: string } = {
+  SHARED_DIR: "shared_directory.txt",
+  FILE_IGNORE: "file_ignore.jsonl",
+  FOLDER_IGNORE: "folder_ignore.jsonl",
 };
 
 function moveUpDir() {
@@ -40,9 +52,9 @@ function moveUpDir() {
   ).then((value) => {
     currentDir.value = value.Directory;
     foldersInCurrentDir.value = value.Folders;
-    rawFoldersInCurrentDir = foldersInCurrentDir.value;
+    rawFoldersInCurrentDir.value = foldersInCurrentDir.value;
     filesInCurrentDir.value = value.Files;
-    rawFilesInCurrentDir = value.Files;
+    rawFilesInCurrentDir.value = value.Files;
     handleShowHidden();
     handleShowFiles();
     console.log(foldersInCurrentDir.value);
@@ -57,9 +69,9 @@ function moveDownDir(f: string) {
   ).then((value) => {
     currentDir.value = value.Directory;
     foldersInCurrentDir.value = value.Folders;
-    rawFoldersInCurrentDir = foldersInCurrentDir.value;
+    rawFoldersInCurrentDir.value = foldersInCurrentDir.value;
     filesInCurrentDir.value = value.Files;
-    rawFilesInCurrentDir = value.Files;
+    rawFilesInCurrentDir.value = value.Files;
     handleShowHidden();
     handleShowFiles();
     console.log(foldersInCurrentDir.value);
@@ -71,8 +83,8 @@ function goHome() {
     (value) => {
       currentDir.value = value.Directory;
       foldersInCurrentDir.value = value.Folders;
-      rawFoldersInCurrentDir = foldersInCurrentDir.value;
-      rawFilesInCurrentDir = value.Files;
+      rawFoldersInCurrentDir.value = foldersInCurrentDir.value;
+      rawFilesInCurrentDir.value = value.Files;
       filesInCurrentDir.value = value.Files;
       handleShowHidden();
       handleShowFiles();
@@ -86,9 +98,21 @@ function selectFolder() {
   setTimeout(() => (showFolderButton.value = true), 300);
   FolderSelectorControl(currentDir.value, FolderSelectorCommands.SELECT, "");
   sharedDirectory.value = currentDir.value;
+  // reset the ignored files list
+  SetConfigItemStringList(ConfigItems.FILE_IGNORE, []);
+  SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, []);
+  folderIgnoreList.value = [];
+  fileIgnoreList.value = [];
 }
 
 function cancelFolderSelectTransition() {
+  // add something to reset the ignore list
+  FolderSelectorControl("", FolderSelectorCommands.CANCEL, "").then((value) => {
+    rawFilesInCurrentDir.value = value.Files;
+    rawFoldersInCurrentDir.value = value.Folders;
+  });
+  handleShowFiles();
+  handleShowHidden();
   openFolderSelector.value = false;
   setTimeout(() => {
     showFolderButton.value = true;
@@ -104,27 +128,81 @@ function changeFolderTransition() {
 
 function handleShowHidden() {
   if (!showHiddenFiles.value) {
-    rawFoldersInCurrentDir = foldersInCurrentDir.value;
+    rawFoldersInCurrentDir.value = foldersInCurrentDir.value;
     foldersInCurrentDir.value = foldersInCurrentDir.value.filter(
       (file) => !file.startsWith("."),
     );
   } else {
-    foldersInCurrentDir.value = rawFoldersInCurrentDir;
+    foldersInCurrentDir.value = rawFoldersInCurrentDir.value;
   }
 }
 
 function handleShowFiles() {
   if (showFiles.value) {
-    filesInCurrentDir.value = rawFilesInCurrentDir;
+    filesInCurrentDir.value = rawFilesInCurrentDir.value;
   } else {
     filesInCurrentDir.value = [];
   }
 }
 
-function chooseNewDir() {
-  enableSelector.value = true;
-  console.debug("chooseNewDir event fired...");
-  setTimeout(() => (modalOpacity.value = "1"), 300);
+function updateFileIgnoreList(file: string) {
+  // if file not in the list, add it
+  // otherwise, remove it
+  console.log("file ignore list: ", fileIgnoreList.value);
+  let i = fileIgnoreList.value.indexOf(file);
+  if (i == -1) {
+    fileIgnoreList.value.push(file);
+  } else {
+    fileIgnoreList.value = fileIgnoreList.value.filter(
+      (value, index) => value != file,
+    );
+  }
+  // remove empty string
+  fileIgnoreList.value = fileIgnoreList.value.filter((v) => v != "");
+  SetConfigItemStringList(ConfigItems.FILE_IGNORE, fileIgnoreList.value);
+  console.log(fileIgnoreList.value);
+  // send config to remote peers
+  if (peers !== undefined) {
+    const peerlist = peers?._rawValue;
+    peerlist.forEach((p: string) => {
+      const url = "http://" + p + ":8080/updateFileIgnoreList";
+      fetch(url, {
+        method: "POST",
+        body: JSON.stringify(fileIgnoreList.value),
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+  }
+}
+
+function updateFolderIgnoreList(folder: string) {
+  // if file not in the list, add it
+  // otherwise, remove it
+  console.log("folder ignore list: ", folderIgnoreList.value);
+  let i = folderIgnoreList.value.indexOf(folder);
+  if (i == -1) {
+    folderIgnoreList.value.push(folder);
+  } else {
+    folderIgnoreList.value = folderIgnoreList.value.filter(
+      (value, index) => value != folder,
+    );
+  }
+  // remove empty string
+  folderIgnoreList.value = folderIgnoreList.value.filter((v) => v != "");
+  SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
+  // send config to remote peers
+  if (peers !== undefined) {
+    const peerlist = peers?._rawValue;
+    peerlist.forEach((p: string) => {
+      const url = "http://" + p + ":8080/updateFolderIgnoreList";
+      fetch(url, {
+        method: "POST",
+        body: JSON.stringify(folderIgnoreList.value),
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+  }
+  console.log(folderIgnoreList.value);
 }
 
 onMounted(() => {
@@ -133,28 +211,70 @@ onMounted(() => {
     currentDir.value = value.Directory;
     foldersInCurrentDir.value = value.Folders;
     filesInCurrentDir.value = value.Files;
-    rawFilesInCurrentDir = value.Files;
+    rawFilesInCurrentDir.value = value.Files;
+    rawFoldersInCurrentDir.value = value.Folders;
     handleShowHidden();
     handleShowFiles();
     console.log(foldersInCurrentDir.value);
+    console.log("raw files and folders: ", rawFilesInCurrentDir);
   });
+  // FIXME: can be cleaned up using generic functions
   GetSharedDirectory().then((dir) => {
     sharedDirectory.value = dir;
+  });
+  // Get previously saved ignore lists
+  GetConfigValueStringList("file_ignore.jsonl").then((value) => {
+    fileIgnoreList.value = value;
+  });
+  GetConfigValueStringList("folder_ignore.jsonl").then((value) => {
+    console.log("Running get folder ignore");
+    folderIgnoreList.value = value;
+    console.log(folderIgnoreList.value);
   });
 });
 
 const openFolderSelector = ref<boolean>(false);
 const showFolderButton = ref<boolean>(true);
+
+const peers = inject<any>("peers"); // really should be type: stirng[], but for some reason that breaks when using ._rawValue
+
+// wipe the ignores
+function resetIgnores() {
+  folderIgnoreList.value = [];
+  fileIgnoreList.value = [];
+  SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, folderIgnoreList.value);
+  SetConfigItemStringList(ConfigItems.FILE_IGNORE, fileIgnoreList.value);
+  console.log("peers: ", typeof peers, peers);
+  console.log(peers._rawValue);
+  const peerlist = peers?._rawValue;
+  if (peers !== undefined && peers !== null) {
+    peerlist.forEach((p: string) => {
+      const url = "http://" + p + ":8080/resetIgnoreList";
+      console.log("url: ", url);
+      fetch(url);
+    });
+  }
+}
+
+// Theme piping
+const props = defineProps([
+  "firstColor",
+  "secondColor",
+  "thirdColor",
+  "fourthColor",
+  "textColor",
+]);
 </script>
 
 <template>
-  <div class="outer-view">
+  <main class="outer-view">
     <div class="folder-selection-view">
       <div class="folder-view-wrapper">
         <h1 class="title">Shared Folder</h1>
         <div class="shared-directory tooltip" v-if="showFolderButton">
-          <span class="tooltiptext">Your shared directory</span
-          >{{ sharedDirectory }}
+          <span class="tooltiptext">Your shared directory</span>
+          <div v-if="sharedDirectory != ''">{{ sharedDirectory }}</div>
+          <div v-else style="color: red">No shared directory set.</div>
         </div>
         <div class="current-directory shared-directory" v-else>
           {{ currentDir }}
@@ -168,6 +288,28 @@ const showFolderButton = ref<boolean>(true);
             >
               Change Shared Folder
             </button>
+            <div class="ignore-list">
+              <div>Click on file or folder to have Synk ignore it.</div>
+              <FolderSelectorItems
+                :folders="rawFoldersInCurrentDir"
+                :files="rawFilesInCurrentDir"
+                :folder-func="
+                  (folder: string) => {
+                    updateFolderIgnoreList(folder);
+                  }
+                "
+                :ignore-folders="folderIgnoreList"
+                :ignored-files="fileIgnoreList"
+                :file-func="
+                  (file: string) => {
+                    updateFileIgnoreList(file);
+                  }
+                "
+              />
+            </div>
+            <button class="change-folder-button" @click="resetIgnores">
+              Reset Ignores
+            </button>
           </div>
         </Transition>
         <Transition name="slide-fade">
@@ -176,6 +318,19 @@ const showFolderButton = ref<boolean>(true);
               <FolderSelectorItems
                 :folders="foldersInCurrentDir"
                 :files="filesInCurrentDir"
+                :ignore-folders="[]"
+                :ignored-files="[]"
+                :folder-func="
+                  (folder: string) => {
+                    moveDownDir(folder);
+                  }
+                "
+                :file-func="(file: string) => {}"
+                :firstColor="firstColor"
+                :secondColor="secondColor"
+                :thirdColor="thirdColor"
+                :fourthColor="fourthColor"
+                :textColor="textColor"
                 @move-down-dir="moveDownDir"
               />
             </div>
@@ -190,7 +345,6 @@ const showFolderButton = ref<boolean>(true);
               </button>
             </div>
             <div class="options-and-current-dir">
-              <!-- <p class="current-directory">{{ currentDir }}</p> -->
               <div class="options-wrapper">
                 <div class="option">
                   <div>Show hidden folders</div>
@@ -222,7 +376,7 @@ const showFolderButton = ref<boolean>(true);
         </Transition>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <style scoped>
@@ -231,6 +385,12 @@ const showFolderButton = ref<boolean>(true);
   width: 100%;
   display: flex;
   justify-content: center;
+}
+
+.ignore-list {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  max-height: 200px;
 }
 
 .folder-view-wrapper {
@@ -242,11 +402,19 @@ const showFolderButton = ref<boolean>(true);
   width: 100%;
   border-left: 1px solid grey;
   border-right: 1px solid grey;
-  background: rgba(20, 20, 20, 0.9);
+  /* background: rgba(20, 20, 20, 0.9);
+   */
+  background: v-bind(firstColor);
+  color: v-bind(textColor);
 }
 
 .change-folder-button-wrapper {
-  background-color: rgba(30, 30, 30, 0.8);
+  /* background-color: rgba(30, 30, 30, 0.8); */
+  background-color: linear-gradient(
+    200deg,
+    v-bind(firstColor),
+    v-bind(fourthColor)
+  );
   border-left: 1px solid grey;
   border-right: 1px solid grey;
   width: 100%;
@@ -256,46 +424,37 @@ const showFolderButton = ref<boolean>(true);
 }
 
 .change-folder-button-wrapper .change-folder-button {
-  color: white;
   padding: 20px;
   border: 2px solid rgb(33, 33, 33);
   border-radius: 10px;
   margin-bottom: 40px;
+  margin-top: 20px;
+  background: linear-gradient(
+    200deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
+  );
+  color: v-bind(textColor);
 }
 
 .shared-directory {
-  /* margin: 10%; */
   background: linear-gradient(
-    180deg,
-    rgba(148, 148, 148, 0.9) 0,
-    rgba(7, 7, 7, 0.93) 20%,
-    rgba(19, 19, 19, 0.9) 40%,
-    rgba(30, 30, 30, 0.93) 100%
+    200deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 20%,
+    v-bind(thirdColor) 40%,
+    v-bind(fourthColor) 100%
   );
-  /* padding: 20px; */
   padding-top: 20px;
   padding-bottom: 20px;
-  /* margin-top: 10%; */
   width: 100%;
   border-left: 1px solid grey;
   border-right: 1px solid grey;
   border-top: 1px solid grey;
   border-top-left-radius: 40px;
   border-top-right-radius: 40px;
-}
-
-.folder-view-spacer {
-  padding-top: 20px;
-  background: linear-gradient(
-    180deg,
-    rgba(7, 7, 7, 0.93) 0,
-    rgba(19, 19, 19, 0.9) 20%,
-    rgba(71, 71, 71, 0.9) 40%,
-    rgba(148, 148, 148, 0.9) 100%
-  );
-  border-left: 1px solid grey;
-  border-right: 1px solid grey;
-  width: 100%;
 }
 
 .slide-fade-enter-active {
@@ -330,18 +489,12 @@ const showFolderButton = ref<boolean>(true);
 }
 
 .options-and-current-dir .option {
-  color: white;
+  /* color: white; */
 }
 
 .current-directory {
-  color: white;
-  /* border: solid black 2px; */
-  /* padding: 10px; */
-  /* background-color: lightgrey;
-   */
   animation: blink 0.5s ease-in-out;
   animation-iteration-count: infinite;
-  /* border: solid 1px rbga(0, 0, 0, 0); */
   border-width: 1px;
   border-style: solid;
 }
@@ -364,24 +517,10 @@ const showFolderButton = ref<boolean>(true);
   flex-direction: row;
 }
 
-.change-folder-button {
-  margin-top: 50px;
-  background: linear-gradient(
-    180deg,
-    rgba(148, 148, 148, 0.9) 0,
-    rgba(7, 7, 7, 0.93) 20%,
-    rgba(19, 19, 19, 0.9) 40%,
-    rgba(105, 102, 102, 0.93) 100%
-  );
-}
-
 .nav-button-group .nav-button {
-  background-color: lightgrey;
-  /* width: 50%; */
-  /* margin: auto; */
   height: 100%;
-  color: white;
-  background-color: rgba(45, 44, 44, 0.7);
+  background: linear-gradient(v-bind(firstColor), v-bind(thirdColor));
+  color: v-bind(textColor);
 }
 
 .folder-selection-box {

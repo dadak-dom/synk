@@ -6,6 +6,14 @@ export function FolderSelectorControl(arg1, arg2, arg3) {
   return window['go']['main']['App']['FolderSelectorControl'](arg1, arg2, arg3);
 }
 
+export function GetConfigValueString(arg1) {
+  return window['go']['main']['App']['GetConfigValueString'](arg1);
+}
+
+export function GetConfigValueStringList(arg1) {
+  return window['go']['main']['App']['GetConfigValueStringList'](arg1);
+}
+
 export function GetLocalIP() {
   return window['go']['main']['App']['GetLocalIP']();
 }
@@ -18,12 +26,24 @@ export function GetSharedDirectory() {
   return window['go']['main']['App']['GetSharedDirectory']();
 }
 
+export function GetTheme() {
+  return window['go']['main']['App']['GetTheme']();
+}
+
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
 
 export function RunSynkOnPeer(arg1, arg2) {
   return window['go']['main']['App']['RunSynkOnPeer'](arg1, arg2);
+}
+
+export function SetConfigItemString(arg1, arg2) {
+  return window['go']['main']['App']['SetConfigItemString'](arg1, arg2);
+}
+
+export function SetConfigItemStringList(arg1, arg2) {
+  return window['go']['main']['App']['SetConfigItemStringList'](arg1, arg2);
 }
 
 export function TestLANDiscovery() {

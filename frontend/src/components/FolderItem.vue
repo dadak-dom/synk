@@ -4,6 +4,12 @@ import { onMounted, onUpdated, ref } from "vue";
 defineProps({
   text: String,
   file: Boolean,
+  ignored: Boolean,
+  firstColor: String,
+  secondColor: String,
+  thirdColor: String,
+  fourthColor: String,
+  textColor: String,
 });
 
 const showItem = ref<boolean>(false);
@@ -28,9 +34,12 @@ onUpdated(() => {
           src="../assets/images/folder.png"
         />
       </Transition>
-      <Transition name="slide-fade">
+      <Transition name="fade">
         <div class="folder-text" v-if="showItem">
-          {{ text }}
+          <div v-if="ignored" style="color: red">
+            <s>{{ text }}</s>
+          </div>
+          <div v-else>{{ text }}</div>
         </div>
       </Transition>
     </button>
@@ -43,32 +52,39 @@ onUpdated(() => {
   display: flex;
   justify-content: left;
   gap: 5px;
-  background: linear-gradient(
+  /* background: linear-gradient(
     300deg,
     rgba(86, 86, 86, 0.9) 0,
     rgba(30, 30, 30, 0.93) 1%
+  ); */
+  background: linear-gradient(
+    300deg,
+    v-bind(firstColor) 0,
+    v-bind(secondColor) 5%,
+    v-bind(thirdColor) 20%,
+    v-bind(fourthColor) 100%
   );
   border: none;
   border-radius: 1px;
-  color: white;
+  /* color: white;
+   */
+  color: v-bind(textColor);
   cursor: pointer;
 }
 
 .folder-image {
   width: 5%;
 }
-
-.slide-fade-enter-active {
+.fade-enter-active {
   transition: all 0.3s ease-out;
 }
 
-.slide-fade-leave-active {
+.fade-leave-active {
   transition: all 0.3s ease-in-out;
 }
 
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateX(20px);
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 </style>
