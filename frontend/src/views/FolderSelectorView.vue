@@ -263,11 +263,13 @@ const props = defineProps([
   "thirdColor",
   "fourthColor",
   "textColor",
+  "backgroundColor",
+  "borderColor",
 ]);
 </script>
 
 <template>
-  <main class="outer-view">
+  <div class="outer-view">
     <div class="folder-selection-view">
       <div class="folder-view-wrapper">
         <h1 class="title">Shared Folder</h1>
@@ -331,6 +333,7 @@ const props = defineProps([
                 :thirdColor="thirdColor"
                 :fourthColor="fourthColor"
                 :textColor="textColor"
+                :borderColor="borderColor"
                 @move-down-dir="moveDownDir"
               />
             </div>
@@ -376,7 +379,7 @@ const props = defineProps([
         </Transition>
       </div>
     </div>
-  </main>
+  </div>
 </template>
 
 <style scoped>
@@ -394,29 +397,37 @@ const props = defineProps([
 }
 
 .folder-view-wrapper {
+  color: v-bind(textColor);
   width: 90%;
+}
+
+.outer-view {
+  background: v-bind(backgroundColor);
+}
+
+.title {
+  border-radius: 20px;
+  border: 1px solid v-bind(borderColor);
 }
 
 .folder-selector-box {
   height: 100%;
   width: 100%;
-  border-left: 1px solid grey;
-  border-right: 1px solid grey;
-  /* background: rgba(20, 20, 20, 0.9);
-   */
-  background: v-bind(firstColor);
-  color: v-bind(textColor);
+  border-left: 1px solid v-bind(borderColor);
+  border-right: 1px solid v-bind(borderColor);
+  background: v-bind(backgroundColor);
 }
 
 .change-folder-button-wrapper {
   /* background-color: rgba(30, 30, 30, 0.8); */
-  background-color: linear-gradient(
+  /* background-color: linear-gradient(
     200deg,
     v-bind(firstColor),
     v-bind(fourthColor)
-  );
-  border-left: 1px solid grey;
-  border-right: 1px solid grey;
+  ); */
+  background: v-bind(backgroundColor);
+  border-left: 1px solid v-bind(borderColor);
+  border-right: 1px solid v-bind(borderColor);
   width: 100%;
   height: 90%;
   border-bottom-left-radius: 40px;
@@ -428,31 +439,26 @@ const props = defineProps([
   border: 2px solid rgb(33, 33, 33);
   border-radius: 10px;
   margin-bottom: 40px;
-  margin-top: 20px;
-  background: linear-gradient(
-    200deg,
-    v-bind(firstColor) 0,
-    v-bind(secondColor) 20%,
-    v-bind(thirdColor) 40%,
-    v-bind(fourthColor) 100%
-  );
+  margin-top: 10px;
+  background: v-bind(backgroundColor);
   color: v-bind(textColor);
 }
 
 .shared-directory {
-  background: linear-gradient(
+  /* background: linear-gradient(
     200deg,
     v-bind(firstColor) 0,
     v-bind(secondColor) 20%,
     v-bind(thirdColor) 40%,
     v-bind(fourthColor) 100%
-  );
+  ); */
+  background: v-bind(backgroundColor);
   padding-top: 20px;
   padding-bottom: 20px;
   width: 100%;
-  border-left: 1px solid grey;
-  border-right: 1px solid grey;
-  border-top: 1px solid grey;
+  border-left: 1px solid v-bind(borderColor);
+  border-right: 1px solid v-bind(borderColor);
+  border-top: 1px solid v-bind(borderColor);
   border-top-left-radius: 40px;
   border-top-right-radius: 40px;
 }
@@ -485,7 +491,7 @@ const props = defineProps([
 .options-and-current-dir .options-wrapper {
   display: grid;
   grid-template-columns: auto auto auto;
-  /* background-color: lightgrey; */
+  background: v-bind(backgroundColor);
 }
 
 .options-and-current-dir .option {

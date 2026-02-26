@@ -35,6 +35,8 @@ defineProps([
   "fourthColor",
   "textColor",
   "imageFilter",
+  "backgroundColor",
+  "borderColor",
 ]);
 </script>
 
@@ -99,6 +101,7 @@ defineProps([
   height: 200px;
   border-radius: 200px;
   display: flex;
+  box-shadow: 0 0 10px 1px v-bind(borderColor);
 }
 .synk-button-disabled {
   margin-top: 200px;
@@ -113,15 +116,21 @@ defineProps([
   width: 200px;
   height: 200px;
   border-radius: 200px;
-  border: 1px solid black;
+  border: 1px solid v-bind(borderColor);
   display: flex;
+  box-shadow: 0 0 10px 1px v-bind(borderColor);
 }
 
 .peer-list-wrapper {
-  border: solid 1px darkgray;
+  border: solid 1px v-bind(borderColor);
+
+  box-shadow:
+    0 0 5px 1px v-bind(borderColor),
+    0 0 50px 10px v-bind(firstColor);
+  border-radius: 20px;
   width: 80%;
   margin: auto auto 60px auto;
-  background-color: v-bind(firstColor);
+  background-color: v-bind(backgroundColor);
 }
 
 #main-synk-button {
@@ -133,7 +142,7 @@ defineProps([
 #main-synk-button-disabled {
   width: 128px;
   margin: auto;
-  filter: contrast(100) invert();
+  filter: v-bind(imageFilter);
   opacity: 0.5;
 }
 
@@ -147,16 +156,18 @@ defineProps([
 #logo {
   font-family: "FrutigerAero";
   background: linear-gradient(
-    180deg,
+    200deg,
     v-bind(firstColor) 0,
     v-bind(secondColor) 20%,
-    v-bind(thirdColor) 40%,
+    v-bind(thirdColor) 80%,
     v-bind(fourthColor) 100%
   );
   margin: 40px auto;
   width: 50%;
   padding: 20px 0;
   border-radius: 40px;
+  border: 1px solid v-bind(borderColor);
+  box-shadow: 0 0 20px 1px v-bind(borderColor);
 }
 
 #main-synk-button:hover {

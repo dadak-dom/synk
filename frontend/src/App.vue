@@ -53,6 +53,8 @@ const thirdColor = ref<string>("");
 const fourthColor = ref<string>("");
 const textColor = ref<string>("");
 const themeFilter = ref<string>("");
+const backgroundColor = ref<string>("");
+const borderColor = ref<string>("");
 
 provide("theme", theme.value);
 
@@ -66,6 +68,8 @@ function updateTheme(th: string) {
   textColor.value = new_theme.textColor;
   themeName.value = new_theme.name;
   themeFilter.value = new_theme.filter;
+  backgroundColor.value = new_theme.backgroundColor;
+  borderColor.value = new_theme.borderColor;
 
   // ref to update
   theme.value.name = new_theme.name;
@@ -111,6 +115,8 @@ onMounted(() => {
     :fourthColor="fourthColor"
     :textColor="textColor"
     :imageFilter="themeFilter"
+    :backgroundColor="backgroundColor"
+    :borderColor="borderColor"
   >
     <transition name="fade" mode="out-in">
       <component :is="Component" :key="$route.path"></component>
@@ -123,16 +129,18 @@ main {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: linear-gradient(
+  /* background: linear-gradient(
     200deg,
     v-bind(firstColor) 0,
     v-bind(secondColor) 20%,
     v-bind(thirdColor) 40%,
     v-bind(fourthColor) 100%
-  );
+  ); */
+  /* background: v-bind(firstColor); */
+  background: v-bind(backgroundColor);
   color: v-bind(textColor);
+  border: 2px solid v-bind(borderColor);
 }
-
 .outer-view {
   width: 100%;
   display: flex;
@@ -149,14 +157,15 @@ nav {
   gap: 10px;
   margin-top: 10px;
   margin-left: 10px;
-  background: linear-gradient(
+  /* background: linear-gradient(
     200deg,
     v-bind(firstColor) 0,
     v-bind(secondColor) 20%,
     v-bind(thirdColor) 40%,
     v-bind(fourthColor) 100%
-  );
-  border: solid 1px grey;
+  ); */
+  background: v-bind(backgroundColor);
+  border: solid 1px v-bind(borderColor);
   border-radius: 10px;
   padding: 5px;
 }
