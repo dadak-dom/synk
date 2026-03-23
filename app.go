@@ -44,21 +44,21 @@ func updatePeerList(p []string) {
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
-	// msg := <-peers
-	// log.Println("PEERS:", msg)
-
-	// log.Fatal("DONE")
 	a.ctx = ctx
 	router := gin.Default()
-	// router.SetTrustedProxies([]string{})
 	updates := make(chan []string)
+	network.UpdateAPIStatus()
 
+	// place tasks that need periodic repetition in here
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for range ticker.C {
 			updates <- network.LANDiscovery()
+			//update whether the API is enabled or not 
+			// FIXME: there should be a better way to de-couple the API status updates from the landiscovery updates.
+			network.UpdateAPIStatus()
 		}
 	}()
 
@@ -96,7 +96,6 @@ func (a *App) startup(ctx context.Context) {
 	// https://gin-gonic.com/en/docs/examples/upload-file/single-file/
 
 	// TODO: Add a check for a saved value for the shared directory
-
 }
 
 func (a *App) GetLocalIP() string {
@@ -118,6 +117,8 @@ func (a *App) SetConfigItemStringList(item config.ConfigItem, value []string) {
 	config.UpdateUserConfigStringList(item, value)
 }
 
+// FIXME: Add documentation here stating the workflow for sending/receiving information to the GO backend via the JS frontend
+// In other words: if someone had never seen this codebase before, how could I explain to them how to do these common tasks? (or to myself, if I forget (: )
 func (a *App) GetConfigValueString(item config.ConfigItem) string {
 	return config.GetConfigValueString(item)
 }
@@ -233,6 +234,10 @@ func ignoreListSynkHelper(peer string) error {
 	}
 
 	return nil
+}
+
+func (a *App) GetCurrentNetworkName() string {
+	return network.GetCurrentNetworkName()
 }
 
 func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time) bool {

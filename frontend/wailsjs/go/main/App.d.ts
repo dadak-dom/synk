@@ -10,6 +10,8 @@ export function GetConfigValueString(arg1:config.ConfigItem):Promise<string>;
 
 export function GetConfigValueStringList(arg1:config.ConfigItem):Promise<Array<string>>;
 
+export function GetCurrentNetworkName():Promise<string>;
+
 export function GetLocalIP():Promise<string>;
 
 export function GetPeerList():Promise<Array<string>>;

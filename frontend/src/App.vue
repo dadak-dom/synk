@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-import { onMounted, provide, reactive, ref } from "vue";
+import { onMounted, provide, ref } from "vue";
 import { RouterLink } from "vue-router";
 import {
   GetPeerList,
   GetTheme,
   SetConfigItemString,
+  GetConfigValueStringList,
+  GetCurrentNetworkName,
 } from "../wailsjs/go/main/App";
 
 // Router / Navbar stuff
@@ -40,6 +42,14 @@ async function updatePeerList() {
   peers.value = result;
   console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
 }
+
+// Networking
+
+const trustedNetworks = ref<string[]>([]);
+provide("trustedNetworks", trustedNetworks);
+
+const currentNetworkName = ref<string>("");
+provide("networkName", currentNetworkName);
 
 // Themes
 import { Theme, GetThemeInterface } from "./interfaces/theme";
@@ -81,6 +91,14 @@ onMounted(() => {
   console.log("Mounting App.vue...");
   GetTheme().then((th) => {
     updateTheme(th);
+  });
+  GetCurrentNetworkName().then(
+    (network) =>
+      (currentNetworkName.value = network.replace(RegExp(/\s/gm), "")),
+  );
+  GetConfigValueStringList("trusted_networks.jsonl").then((tn) => {
+    trustedNetworks.value = tn;
+    // TODO: Make it so that synking is disabled until the user explicitly allows the network
   });
   setInterval(updatePeerList, 3000);
 });

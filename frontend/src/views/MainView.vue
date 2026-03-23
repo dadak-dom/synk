@@ -27,6 +27,19 @@ const selectedPeers = ref<string[]>([]);
 
 const peers = inject<string[] | null>("peers");
 
+// Trusted network check
+function checkIfNetworkTrusted() {
+  const cn = ref<string>(inject("networkName") ?? "");
+  const tn = ref<Array<string>>(inject("trustedNetworks") ?? []);
+  console.log("cn: ", cn, "tn: ", tn);
+  if (tn.value.includes(cn.value)) {
+    console.log("network trusted");
+    return true;
+  }
+  console.log("not trusted");
+  return false;
+}
+
 // Theme piping
 defineProps([
   "firstColor",
@@ -62,7 +75,10 @@ defineProps([
         <label v-for="peer in peers" :for="peer">{{ peer }}</label>
       </div>
 
-      <button class="synk-button" v-if="selectedPeers.length > 0">
+      <button
+        class="synk-button"
+        v-if="selectedPeers.length > 0 && checkIfNetworkTrusted()"
+      >
         <img
           id="main-synk-button"
           @click="synk"
@@ -72,7 +88,7 @@ defineProps([
       <button class="synk-button-disabled" v-else>
         <img
           id="main-synk-button-disabled"
-          @click="synk"
+          @click=""
           src="../assets/images/refresh.png"
         />
       </button>

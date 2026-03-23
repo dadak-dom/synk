@@ -24,6 +24,7 @@ const (
 	FileIgnoreList   ConfigItem = "file_ignore.jsonl"
 	FolderIgnoreList ConfigItem = "folder_ignore.jsonl"
 	Theme ConfigItem = "theme.txt"
+	TrustedNetworks ConfigItem = "trusted_networks.jsonl"
 	//TODO: add more as needed
 )
 
@@ -32,6 +33,7 @@ var AllConfigItems = []ConfigItem{
 	FileIgnoreList,
 	FolderIgnoreList,
 	Theme,
+	TrustedNetworks,
 }
 
 // Get the config file location
@@ -122,11 +124,11 @@ func GetConfigValueString(value ConfigItem) string {
 func GetConfigValueStringList(value ConfigItem) []string {
 	switch value {
 	// TODO: if more cases come, add them here
-	case FolderIgnoreList, FileIgnoreList:
+	case FolderIgnoreList, FileIgnoreList, TrustedNetworks:
 		log.Println("Config value for: ", value)
 		return readJsonLinesFile(value)
 	default:
-		log.Fatal("Missing case in GetConfigValueString")
+		log.Fatal("Missing case in GetConfigValueStringList")
 	}
 	return make([]string, 0)
 }
