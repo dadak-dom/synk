@@ -2,6 +2,7 @@
 import { onMounted, provide, reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
 import {
+  GetConfigValueString,
   GetPeerList,
   GetTheme,
   SetConfigItemString,
@@ -41,6 +42,10 @@ async function updatePeerList() {
   console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
 }
 
+// Config items in settings
+const autoIgnoreAll = ref<boolean>();
+provide("autoIgnoreAll", autoIgnoreAll);
+
 // Themes
 import { Theme, GetThemeInterface } from "./interfaces/theme";
 
@@ -78,6 +83,11 @@ onMounted(() => {
   GetTheme().then((th) => {
     updateTheme(th);
   });
+  GetConfigValueString("auto_ignore_all.txt").then((aia) =>
+    aia == "true"
+      ? (autoIgnoreAll.value = true)
+      : (autoIgnoreAll.value = false),
+  );
   setInterval(updatePeerList, 3000);
 });
 </script>

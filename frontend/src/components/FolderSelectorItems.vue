@@ -15,6 +15,7 @@ defineProps({
   thirdColor: { type: String, required: false },
   fourthColor: { type: String, required: false },
   textColor: { type: String, required: false },
+  receiveOnly: { type: Boolean, required: true },
 });
 
 const emit = defineEmits(["moveDownDir"]);
@@ -33,6 +34,7 @@ function folderClick(folder: string) {
         :file="false"
         :ignored="ignoreFolders.indexOf(folder) != -1"
         :textColor="textColor"
+        :receiveOnly="receiveOnly"
       />
     </div>
     <div v-if="files != undefined" v-for="file in files">
@@ -41,6 +43,7 @@ function folderClick(folder: string) {
         @click="fileFunc(file)"
         :file="true"
         :ignored="ignoredFiles.indexOf(file) != -1"
+        :receiveOnly="receiveOnly"
       />
     </div>
   </main>
