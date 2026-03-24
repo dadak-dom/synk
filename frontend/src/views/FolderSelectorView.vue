@@ -8,6 +8,7 @@ import {
   GetConfigValueStringList,
   GetSharedDirectory,
   SetConfigItemStringList,
+  SetConfigItemString,
 } from "../../wailsjs/go/main/App";
 import FolderSelectorItems from "../components/FolderSelectorItems.vue";
 
@@ -16,7 +17,7 @@ const enableSelector = ref(false);
 const currentDir = ref();
 const foldersInCurrentDir = ref<string[]>([]);
 const filesInCurrentDir = ref<string[]>([]);
-const rawFoldersInCurrentDir = ref<string[]>([]);
+const rawFoldersInCurrentDir = ref<string[]>([]); // FIXME: I believe "raw" just mean that it includes hidden folders. Verify this.
 const rawFilesInCurrentDir = ref<string[]>([]);
 
 const sharedDirectory = ref("");
@@ -24,6 +25,8 @@ const sharedDirectory = ref("");
 // Ignore list
 const fileIgnoreList = ref<string[]>([]);
 const folderIgnoreList = ref<string[]>([]);
+const autoIgnoreAll = ref<boolean>(inject("autoIgnoreAll") ?? false);
+// const autoIgnoreAll = ref<boolean>(false);
 
 // Options for viewing the file selector:
 const showHiddenFiles = ref(false);
@@ -256,6 +259,36 @@ function resetIgnores() {
   }
 }
 
+// ignore everything in shared directory
+function ignoreAll() {
+  // reset everything first, then ignore everything
+  console.log(
+    "TESTING!!!!: ",
+    foldersInCurrentDir.value.length,
+    filesInCurrentDir.value.length,
+  );
+  resetIgnores();
+  rawFilesInCurrentDir.value.forEach((value, index) =>
+    updateFileIgnoreList(value),
+  );
+  rawFoldersInCurrentDir.value.forEach((value, index) =>
+    updateFolderIgnoreList(value),
+  );
+}
+
+// toggles the value of the autoIgnoreAll config item
+function toggleAutoIgnoreAll() {
+  console.log("Auto ignore all: ", autoIgnoreAll.value, !autoIgnoreAll.value);
+  SetConfigItemString("auto_ignore_all.txt", autoIgnoreAll.value.toString());
+  // if (autoIgnoreAll.value) {
+  //   SetConfigItemStringList(ConfigItems.FILE_IGNORE, ["*"]);
+  //   SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, ["*"]); // FIXME: If "*" is the folder/file ignore list, have everything redded out in the list
+  // } else {
+  //   SetConfigItemStringList(ConfigItems.FILE_IGNORE, []);
+  //   SetConfigItemStringList(ConfigItems.FOLDER_IGNORE, []); // FIXME: just set to empty for now
+  // }
+}
+
 // Theme piping
 const props = defineProps([
   "firstColor",
@@ -305,11 +338,35 @@ const props = defineProps([
                     updateFileIgnoreList(file);
                   }
                 "
+                :receive-only="autoIgnoreAll"
               />
             </div>
             <button class="change-folder-button" @click="resetIgnores">
               Reset Ignores
             </button>
+            <button
+              class="change-folder-button"
+              @click="ignoreAll"
+              :disabled="
+                folderIgnoreList.length == rawFoldersInCurrentDir.length &&
+                fileIgnoreList.length == rawFilesInCurrentDir.length
+              "
+            >
+              Ignore All
+            </button>
+
+            <div class="option">
+              <div>Receive-Only Mode</div>
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  v-bind:checked="autoIgnoreAll"
+                  v-model="autoIgnoreAll"
+                  @change="toggleAutoIgnoreAll"
+                />
+                <span class="slider round"></span>
+              </label>
+            </div>
           </div>
         </Transition>
         <Transition name="slide-fade">
@@ -331,6 +388,7 @@ const props = defineProps([
                 :thirdColor="thirdColor"
                 :fourthColor="fourthColor"
                 :textColor="textColor"
+                :receive-only="autoIgnoreAll"
                 @move-down-dir="moveDownDir"
               />
             </div>
