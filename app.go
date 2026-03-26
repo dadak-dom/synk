@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"synk/utils"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -44,31 +46,146 @@ func updatePeerList(p []string) {
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
-	// msg := <-peers
-	// log.Println("PEERS:", msg)
-
-	// log.Fatal("DONE")
 	a.ctx = ctx
-	router := gin.Default()
-	// router.SetTrustedProxies([]string{})
-	updates := make(chan []string)
+	
+	// TODO: implement a file watcher
+	// In order to update the actual file watcher, we need to watch the shared_directory config item for any changes
+	// Setting up file watcher:
+	
+	sharedDirectoryUpdates := make(chan string)
+	go watchSharedDirConfig(sharedDirectoryUpdates)
+	go watchSharedDirContents(sharedDirectoryUpdates)
+	go listenForPeers()
+	go startAPI()
+	// TODO: implement the below:
+	go listenForAutoSynk()
+}
 
+func listenForAutoSynk() {
+	
+}
+
+func watchSharedDirConfig(updates chan<- string) {
+    log.Println("Creating watcher for shared directory config item...")
+
+    watcher, err := fsnotify.NewWatcher()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer watcher.Close()
+	err = watcher.Add(config.GetConfigItemFileLocation(config.SharedDirectory))
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for {
+        select {
+        case event, ok := <-watcher.Events:
+            if !ok {
+                return
+            }
+            log.Println("event:", event)
+            if event.Has(fsnotify.Write) {
+                log.Println("modified file:", event.Name)
+                updates <- config.GetConfigValueString(config.SharedDirectory) // add the event to the shared channel
+            }
+
+        case err, ok := <-watcher.Errors:
+            if !ok {
+                return
+            }
+            log.Println("error:", err)
+        }
+    }
+}
+
+func watchSharedDirContents(sharedDirChange <-chan string) {
+	log.Println("Creating watcher for shared directory...")
+
+    watcher, err := fsnotify.NewWatcher()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer watcher.Close()
+	sf := config.GetConfigValueString(config.SharedDirectory)
+	err = watcher.Add(sf)
+	filepath.WalkDir(sf, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+				watcher.Add(path)
+		}
+		return nil
+	})
+
+	if err != nil {
+        log.Fatal(err)
+    }
+
+	log.Println("WATCHING THE FOLLOWING: ", watcher.WatchList())
+    for {
+        select {
+		case newDir := <-sharedDirChange:
+			// sf in this case is the old shared folder
+			// err = watcher.Remove(sf)
+			// if err != nil {
+			// 	log.Fatal("Error when changing shared folder watcher: ", err)
+			// }
+			// remove everything on watchlist
+			for _, watched := range watcher.WatchList() {
+				err = watcher.Remove(watched)
+				if err != nil {
+					log.Fatal("Error when removing sub-directories of old watchlist: ", err)
+				}
+			}
+			
+			err = watcher.Add(newDir)
+			filepath.WalkDir(newDir, func(path string, d fs.DirEntry, err error) error {
+				if d.IsDir() {
+						watcher.Add(path)
+				}
+				return nil
+			})
+			log.Println("Watchlist has been updated; now watching the following: ", watcher.WatchList())
+        case event, ok := <-watcher.Events:
+            if !ok {
+                return
+            }
+            log.Println("event:", event)
+			// FIXME: For now , I will only be handling file modifications, not creations/deletions
+            if event.Has(fsnotify.Write) {
+                log.Println("modified file:", event.Name)
+                // TODO: Push any changes to a channel
+            }
+
+        case err, ok := <-watcher.Errors:
+            if !ok {
+                return
+            }
+            log.Println("error:", err)
+        }
+    }
+}
+
+func listenForPeers() {
+	peerUpdates := make(chan []string)
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for range ticker.C {
-			updates <- network.LANDiscovery()
+			peerUpdates <- network.LANDiscovery()
 		}
 	}()
 
 	go func() {
-		for peers := range updates {
+		for peers := range peerUpdates {
 			log.Println("Updated peers:", peers)
 			updatePeerList(peers)
 		}
 	}()
+}
 
+func startAPI() {
+	router := gin.Default()
 	// FIXME: Consider setting up the API when starting a transfer, and then shutting it down when it's done
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
@@ -92,11 +209,6 @@ func (a *App) startup(ctx context.Context) {
 	router.GET("/getFolderIgnoreList", network.GetFolderIgnoreList)
 	router.GET("/getFileIgnoreList", network.GetFileIgnoreList)
 	router.Run(myLocalIP + APIport)
-	// TODO: Use the following guide to figure out how to send files back and forth:
-	// https://gin-gonic.com/en/docs/examples/upload-file/single-file/
-
-	// TODO: Add a check for a saved value for the shared directory
-
 }
 
 func (a *App) GetLocalIP() string {
