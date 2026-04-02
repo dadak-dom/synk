@@ -41,6 +41,7 @@ async function updatePeerList() {
   const result = await GetPeerList();
   peers.value = result;
   console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
+  console.log(navigator.platform)
 }
 
 // Networking
@@ -94,7 +95,11 @@ onMounted(() => {
   });
   GetCurrentNetworkName().then(
     (network) =>
-      (currentNetworkName.value = network.replace(RegExp(/\s/gm), "")),
+      {if(navigator.platform.toLowerCase().includes("win")) {
+        currentNetworkName.value = network.replace(RegExp(/\s/gm), "")
+      } else if(navigator.platform.toLowerCase().includes("lin")) {
+        currentNetworkName.value = network
+      }}
   );
   GetConfigValueStringList("trusted_networks.jsonl").then((tn) => {
     trustedNetworks.value = tn;
