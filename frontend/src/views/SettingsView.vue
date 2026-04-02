@@ -8,6 +8,7 @@ import {
 } from "../../wailsjs/go/main/App";
 import { Theme, AllThemeNames } from "../interfaces/theme";
 const myPrivateIP = ref<string>("");
+const revealIP = ref<boolean>(false);
 
 const userTheme = inject<Theme>("theme");
 const emit = defineEmits(["updateTheme"]);
@@ -52,6 +53,18 @@ function checkIfAlreadyTrusted() {
   return false;
 }
 
+// theme
+const props = defineProps([
+  "firstColor",
+  "secondColor",
+  "thirdColor",
+  "fourthColor",
+  "textColor",
+  "imageFilter",
+  "backgroundColor",
+  "borderColor",
+]);
+
 onMounted(() => {
   GetLocalIP().then((ip) => {
     myPrivateIP.value = ip;
@@ -65,16 +78,23 @@ onMounted(() => {
       <h1>Settings</h1>
     </div>
     <div class="settings">
-      <p>My private IP: {{ myPrivateIP }}</p>
-      <p>Current network: {{ inject("networkName") }}</p>
-      <p>Trusted networks list: {{ trustedNetworks }}</p>
-      <button
-        @click="addTrustedNetwork(currentNetwork)"
-        :disabled="checkIfAlreadyTrusted()"
-      >
-        Trust my network
-      </button>
-      <button @click="resetTrustedNetworks">Reset trusted networks</button>
+      <div class="private-ip-wrapper">
+          <div>My private IP:</div>
+          <div @mouseenter="revealIP = true" @mouseleave="revealIP = false" class="private-ip">{{ myPrivateIP }}
+          <div :hidden="revealIP" class="censor-text">.</div>
+        </div>
+      </div>
+      <div class="trusted-networks-wrapper">
+        <div>Current network: {{ inject("networkName") }}</div>
+        <div>Trusted networks list: {{ trustedNetworks }}</div>
+        <button
+          @click="addTrustedNetwork(currentNetwork)"
+          :disabled="checkIfAlreadyTrusted()"
+        >
+          Trust my network
+        </button>
+        <button @click="resetTrustedNetworks" :disabled="trustedNetworks.length == 0">Reset trusted networks</button>
+      </div>
       <div class="theme-selector">
         <label for="themes">Theme:</label>
         <select
@@ -95,10 +115,37 @@ onMounted(() => {
 <style scoped>
 .settings {
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
 }
 .theme-selector {
   display: flex;
   justify-content: center;
   gap: 10px;
+}
+.trusted-networks-wrapper {
+  
+}
+.private-ip-wrapper {
+  display: flex;
+  flex-direction: row;
+  height: fit-content;
+  width: fit-content;
+  gap: 10px;
+}
+.private-ip {
+  position: relative;
+  width: fit-content;
+  cursor: default;
+}
+.censor-text {
+  background-color: v-bind(textColor);
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
 }
 </style>

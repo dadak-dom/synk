@@ -170,8 +170,16 @@ func GetCurrentNetworkName() string {
 		output = strings.Replace(output, " ", "", -1)
 		output = strings.Replace(output, "\n", "", -1)
 		output = strings.Replace(output, "\r", "", -1)
+	} else if runtime.GOOS == "linux" {
+		out, err := exec.Command("nmcli", "-t", "-f", "NAME", "connection", "show", "--active").Output()
+		if err != nil {
+			log.Fatal("Failed to execute command: (in GetCurrentNetworkName)", err)
+		}
+		out_string := strings.Split(string(out), "\n")[0]
+		log.Println("Current network name: ", out_string)
+		output = out_string
 	}
-	// TODO: Add Linux and Mac cases!
+	// TODO: Add case for Mac systems
 
 	return output
 }
