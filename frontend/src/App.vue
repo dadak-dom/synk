@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-import { onMounted, provide, reactive, ref } from "vue";
+import { onMounted, provide, ref } from "vue";
 import { RouterLink } from "vue-router";
 import {
   GetPeerList,
   GetTheme,
   SetConfigItemString,
+  GetConfigValueStringList,
+  GetCurrentNetworkName,
 } from "../wailsjs/go/main/App";
 
 // Router / Navbar stuff
@@ -39,7 +41,16 @@ async function updatePeerList() {
   const result = await GetPeerList();
   peers.value = result;
   console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
+  console.log(navigator.platform)
 }
+
+// Networking
+
+const trustedNetworks = ref<string[]>([]);
+provide("trustedNetworks", trustedNetworks);
+
+const currentNetworkName = ref<string>("");
+provide("networkName", currentNetworkName);
 
 // Themes
 import { Theme, GetThemeInterface } from "./interfaces/theme";
@@ -53,6 +64,8 @@ const thirdColor = ref<string>("");
 const fourthColor = ref<string>("");
 const textColor = ref<string>("");
 const themeFilter = ref<string>("");
+const backgroundColor = ref<string>("");
+const borderColor = ref<string>("");
 
 provide("theme", theme.value);
 
@@ -66,6 +79,8 @@ function updateTheme(th: string) {
   textColor.value = new_theme.textColor;
   themeName.value = new_theme.name;
   themeFilter.value = new_theme.filter;
+  backgroundColor.value = new_theme.backgroundColor;
+  borderColor.value = new_theme.borderColor;
 
   // ref to update
   theme.value.name = new_theme.name;
@@ -77,6 +92,18 @@ onMounted(() => {
   console.log("Mounting App.vue...");
   GetTheme().then((th) => {
     updateTheme(th);
+  });
+  GetCurrentNetworkName().then(
+    (network) =>
+      {if(navigator.platform.toLowerCase().includes("win")) {
+        currentNetworkName.value = network.replace(RegExp(/\s/gm), "")
+      } else if(navigator.platform.toLowerCase().includes("lin")) {
+        currentNetworkName.value = network
+      }}
+  );
+  GetConfigValueStringList("trusted_networks.jsonl").then((tn) => {
+    trustedNetworks.value = tn;
+    // TODO: Make it so that synking is disabled until the user explicitly allows the network
   });
   setInterval(updatePeerList, 3000);
 });
@@ -111,6 +138,8 @@ onMounted(() => {
     :fourthColor="fourthColor"
     :textColor="textColor"
     :imageFilter="themeFilter"
+    :backgroundColor="backgroundColor"
+    :borderColor="borderColor"
   >
     <transition name="fade" mode="out-in">
       <component :is="Component" :key="$route.path"></component>
@@ -123,16 +152,18 @@ main {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: linear-gradient(
+  /* background: linear-gradient(
     200deg,
     v-bind(firstColor) 0,
     v-bind(secondColor) 20%,
     v-bind(thirdColor) 40%,
     v-bind(fourthColor) 100%
-  );
+  ); */
+  /* background: v-bind(firstColor); */
+  background: v-bind(backgroundColor);
   color: v-bind(textColor);
+  border: 2px solid v-bind(borderColor);
 }
-
 .outer-view {
   width: 100%;
   display: flex;
@@ -149,14 +180,15 @@ nav {
   gap: 10px;
   margin-top: 10px;
   margin-left: 10px;
-  background: linear-gradient(
+  /* background: linear-gradient(
     200deg,
     v-bind(firstColor) 0,
     v-bind(secondColor) 20%,
     v-bind(thirdColor) 40%,
     v-bind(fourthColor) 100%
-  );
-  border: solid 1px grey;
+  ); */
+  background: v-bind(backgroundColor);
+  border: solid 1px v-bind(borderColor);
   border-radius: 10px;
   padding: 5px;
 }

@@ -23,7 +23,8 @@ const (
 	SharedDirectory  ConfigItem = "shared_directory.txt"
 	FileIgnoreList   ConfigItem = "file_ignore.jsonl"
 	FolderIgnoreList ConfigItem = "folder_ignore.jsonl"
-	Theme ConfigItem = "theme.txt"
+	Theme            ConfigItem = "theme.txt"
+	TrustedNetworks  ConfigItem = "trusted_networks.jsonl"
 	//TODO: add more as needed
 )
 
@@ -32,6 +33,7 @@ var AllConfigItems = []ConfigItem{
 	FileIgnoreList,
 	FolderIgnoreList,
 	Theme,
+	TrustedNetworks,
 }
 
 // Get the config file location
@@ -83,9 +85,9 @@ func randStringRunes(n int) string {
 	return string(b)
 }
 
-// return a randomly named file in the config location
+// return a randomly named file
 func RandomFileName(file_extension string) string {
-	return filepath.Join(ConfigLocation, randStringRunes(42)+file_extension)
+	return randStringRunes(42) + file_extension
 }
 
 func UpdateUserConfigString(updated_item ConfigItem, value string) {
@@ -122,11 +124,11 @@ func GetConfigValueString(value ConfigItem) string {
 func GetConfigValueStringList(value ConfigItem) []string {
 	switch value {
 	// TODO: if more cases come, add them here
-	case FolderIgnoreList, FileIgnoreList:
+	case FolderIgnoreList, FileIgnoreList, TrustedNetworks:
 		log.Println("Config value for: ", value)
 		return readJsonLinesFile(value)
 	default:
-		log.Fatal("Missing case in GetConfigValueString")
+		log.Fatal("Missing case in GetConfigValueStringList")
 	}
 	return make([]string, 0)
 }

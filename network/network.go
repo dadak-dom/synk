@@ -8,7 +8,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strconv"
@@ -21,10 +23,22 @@ import (
 	"github.com/schollz/peerdiscovery"
 )
 
-// function that sends a file
-// func SendFile(file_name string, ipaddr IP) {
+var enableAPI = false
 
-// }
+// Check whether or not to allow the API - i.e. am I connected to a trusted network?
+func UpdateAPIStatus() {
+	// get trusted networks
+	tns := config.GetConfigValueStringList(config.TrustedNetworks)
+	// check if current in trusted
+	log.Println("RUNNING API STATUS UPDATE", tns, GetCurrentNetworkName())
+	if slices.Contains(tns, GetCurrentNetworkName()) {
+		enableAPI = true
+	} else {
+		enableAPI = false
+	}
+	log.Println("What is api status? (is it enabled?): ", enableAPI)
+	// TODO : if the API is not enabled, make every API call return an error
+}
 
 // GetLocalIP returns the non loopback local IP of the host
 // need to find an IP that is on the same subnet as peers
@@ -55,142 +69,205 @@ func GetLocalIP() string {
 }
 
 func GetSharedFolderInfo(c *gin.Context) {
-	sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValueString(config.SharedDirectory))
-	c.JSON(http.StatusOK, sharedDirectoryInfo)
+	if !enableAPI {
+		c.JSON(http.StatusUnauthorized, "")
+	} else {
+		sharedDirectoryInfo := utils.ScanSharedDirectory(config.GetConfigValueString(config.SharedDirectory))
+		c.JSON(http.StatusOK, sharedDirectoryInfo)
+	}
 }
 
 func GetFolderIgnoreList(c *gin.Context) {
-	fp := filepath.Join(config.ConfigLocation, string(config.FolderIgnoreList))
-	c.File(fp)
+	if !enableAPI {
+		c.JSON(http.StatusUnauthorized, "")
+	} else {
+		fp := filepath.Join(config.ConfigLocation, string(config.FolderIgnoreList))
+		c.File(fp)
+	}
 }
 
 func GetFileIgnoreList(c *gin.Context) {
-	fp := filepath.Join(config.ConfigLocation, string(config.FileIgnoreList))
-	c.File(fp)
+	if !enableAPI {
+		c.JSON(http.StatusUnauthorized, "")
+	} else {
+		fp := filepath.Join(config.ConfigLocation, string(config.FileIgnoreList))
+		c.File(fp)
+	}
 }
 
 // receives an individual item to add or remove from the ignore list
 // FIXME: next two functions can be abstracted later
 func UpdateFileIgnoreList(c *gin.Context) {
-	// step 1: receive the config file & save it to a temp config location
-	file, _ := c.FormFile("file")
-	temp_file := config.RandomFileName(".jsonl")
-	c.SaveUploadedFile(file, temp_file)
-	// step 2: compare the remote peer's list to your own & add any files that are not in your list already
-	peer_file := config.OpenJsonLinesConfigFile(temp_file)
-	local_file := config.GetConfigValueStringList(config.FileIgnoreList)
-	new_local_file := slices.Clone(local_file)
-	for _, peer_item := range peer_file {
-		if !slices.Contains(local_file, peer_item) {
-			new_local_file = append(new_local_file, peer_item)
+	if !enableAPI {
+		c.JSON(http.StatusUnauthorized, "")
+	} else {
+		// step 1: receive the config file & save it to a temp config location
+		file, _ := c.FormFile("file")
+		temp_file := config.RandomFileName(".jsonl")
+		c.SaveUploadedFile(file, filepath.Join(config.ConfigLocation, temp_file))
+		// step 2: compare the remote peer's list to your own & add any files that are not in your list already
+		log.Println("DEBUGGING: ", temp_file)
+		peer_file := config.OpenJsonLinesConfigFile(temp_file)
+		local_file := config.GetConfigValueStringList(config.FileIgnoreList)
+		new_local_file := slices.Clone(local_file)
+		for _, peer_item := range peer_file {
+			if !slices.Contains(local_file, peer_item) {
+				new_local_file = append(new_local_file, peer_item)
+			}
 		}
+		// step 3: update config file & delete temp
+		os.Remove(temp_file)
+		config.UpdateUserConfigStringList(config.FileIgnoreList, new_local_file)
 	}
-	// step 3: update config file & delete temp
-	os.Remove(temp_file)
-	config.UpdateUserConfigStringList(config.FileIgnoreList, new_local_file)
 }
 
 func UpdateFolderIgnoreList(c *gin.Context) {
-	// step 1: receive the config file & save it to a temp config location
-	file, _ := c.FormFile("file")
-	temp_file := config.RandomFileName(".jsonl")
-	c.SaveUploadedFile(file, temp_file)
-	// step 2: compare the remote peer's list to your own & add any files that are not in your list already
-	peer_file := config.OpenJsonLinesConfigFile(temp_file)
-	local_file := config.GetConfigValueStringList(config.FolderIgnoreList)
-	new_local_file := slices.Clone(local_file)
-	for _, peer_item := range peer_file {
-		if !slices.Contains(local_file, peer_item) {
-			new_local_file = append(new_local_file, peer_item)
+	if !enableAPI {
+		c.JSON(http.StatusUnauthorized, "")
+	} else {
+		// step 1: receive the config file & save it to a temp config location
+		file, _ := c.FormFile("file")
+		temp_file := config.RandomFileName(".jsonl")
+		c.SaveUploadedFile(file, filepath.Join(config.ConfigLocation, temp_file))
+		log.Println("DEBUGGING: ", temp_file)
+		// step 2: compare the remote peer's list to your own & add any files that are not in your list already
+		peer_file := config.OpenJsonLinesConfigFile(temp_file)
+		local_file := config.GetConfigValueStringList(config.FolderIgnoreList)
+		new_local_file := slices.Clone(local_file)
+		for _, peer_item := range peer_file {
+			if !slices.Contains(local_file, peer_item) {
+				new_local_file = append(new_local_file, peer_item)
+			}
 		}
+		// step 3: update config file & delete temp
+		os.Remove(temp_file)
+		config.UpdateUserConfigStringList(config.FolderIgnoreList, new_local_file)
 	}
-	// step 3: update config file & delete temp
-	os.Remove(temp_file)
-	config.UpdateUserConfigStringList(config.FolderIgnoreList, new_local_file)
 }
 
-// func UpdateIgnoreList(c *gin.Context) {
-// 	file, _ := c.FormFile("file")
-// 	var isFolderString string = c.PostForm("isFolder")
-// 	if isFolderString == "true" {
-// 		log.Println("Received update to FOLDER ignore list...")
-// 		c.SaveUploadedFile(file, filepath.Join(config.ConfigLocation, string(config.FolderIgnoreList)))
-// 	} else {
-// 		log.Println("Received update to FILE ignore list...")
-// 		c.SaveUploadedFile(file, filepath.Join(config.ConfigLocation, string(config.FileIgnoreList)))
-// 	}
-// 	c.String(http.StatusOK, fmt.Sprintf("Ignore list upated."))
-// }
+// TODO: functions to add for the "trusted_networks" feature
+// Get list of trusted networks
+// Add new network to list of trusted
+// Remove network from list of trusted
+// Return string of the current network - in other words, the SSID / "wifi name"
+func GetCurrentNetworkName() string {
+	output := ""
+	switch runtime.GOOS {
+	case "windows":
+		out, err := exec.Command("netsh", "wlan", "show", "interfaces").Output()
+		if err != nil {
+			log.Fatal("Failed to execute command: (in GetCurrentNetworkName)", err)
+		}
+		re := regexp.MustCompile(`SSID[\s]*: (.*)[\s]*BSSID`)
+		firstMatch := re.FindStringSubmatch(string(out))
+		if len(firstMatch) == 0 {
+			log.Println("Warning: No network name found!")
+			output = ""
+		} else {
+			output = firstMatch[0]
+		}
+		// post-process the regex - for some reason, the above regex doesn't remove the SSID and BSSID from the string
+		temp := strings.Replace(output, "BSSID", "", 1)
+		temp2 := strings.Replace(temp, "SSID", "", 1)
+		output = strings.Replace(temp2, ":", "", 1) // no idea why, but if I don't split these lines up,the replace function breaks.
+		output = strings.Replace(output, " ", "", -1)
+		output = strings.Replace(output, "\n", "", -1)
+		output = strings.Replace(output, "\r", "", -1)
+	case "linux":
+		out, err := exec.Command("nmcli", "-t", "-f", "NAME", "connection", "show", "--active").Output()
+		if err != nil {
+			log.Fatal("Failed to execute command: (in GetCurrentNetworkName)", err)
+		}
+		out_string := strings.Split(string(out), "\n")[0]
+		log.Println("Current network name: ", out_string)
+		output = out_string
+	}
+	// TODO: Add case for Mac systems
+
+	return output
+}
 
 func ResetIgnoreList(c *gin.Context) {
-	log.Println("Received request to reset ignore lists...")
-	config.UpdateUserConfigStringList(config.FileIgnoreList, make([]string, 0))
-	config.UpdateUserConfigStringList(config.FolderIgnoreList, make([]string, 0))
-	c.String(http.StatusOK, fmt.Sprintf("Ignore lists reset"))
+	if !enableAPI {
+		c.JSON(http.StatusUnauthorized, "")
+	} else {
+		log.Println("Received request to reset ignore lists...")
+		config.UpdateUserConfigStringList(config.FileIgnoreList, make([]string, 0))
+		config.UpdateUserConfigStringList(config.FolderIgnoreList, make([]string, 0))
+		c.String(http.StatusOK, fmt.Sprintf("Ignore lists reset"))
+	}
 }
 
 func UploadFile(c *gin.Context) {
-	file, _ := c.FormFile("file")
-	dir := c.PostForm("dir")
-	// check if the folder exists - if not, create it
-	temp := filepath.Dir(config.ConstructCompleteFilePath(dir))
-	if _, err := os.Stat(temp); err != nil {
-		log.Println("Directory missing, creating now...", temp)
-		os.MkdirAll(temp, os.ModePerm)
+	if !enableAPI {
+		c.JSON(http.StatusUnauthorized, "")
+	} else {
+		file, _ := c.FormFile("file")
+		dir := c.PostForm("dir")
+		// check if the folder exists - if not, create it
+		temp := filepath.Dir(config.ConstructCompleteFilePath(dir))
+		if _, err := os.Stat(temp); err != nil {
+			log.Println("Directory missing, creating now...", temp)
+			os.MkdirAll(temp, os.ModePerm)
+		}
+		log.Println("UPLOAD FILE RECEIVED: ", file.Filename, " IN DIRECTORY: ", dir)
+
+		log.Println("SAVING TO: ", config.ConstructCompleteFilePath(dir))
+		c.SaveUploadedFile(file, config.ConstructCompleteFilePath(dir))
+
+		c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 	}
-	log.Println("UPLOAD FILE RECEIVED: ", file.Filename, " IN DIRECTORY: ", dir)
-
-	log.Println("SAVING TO: ", config.ConstructCompleteFilePath(dir))
-	c.SaveUploadedFile(file, config.ConstructCompleteFilePath(dir))
-
-	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 }
 
 // Allows peer to download a file, provided they give a file index
 func GetFile(c *gin.Context) {
-	// i := c.Param("index")
-	i, _ := strconv.Atoi(c.Query("index"))
-	// get list of files in shared folder
-	sharedFiles := utils.ListFilesInSharedDirectory(config.GetConfigValueString(config.SharedDirectory))
-	fmt.Println("FILE THAT I WOULD SEND: , ", sharedFiles[i], "i = ", i, "param=", c.Query("index"))
-	// I need to be able to construct the path to the file in question
-	complete_path := config.ConstructCompleteFilePath(sharedFiles[i])
-	fmt.Println("============================\nCOMPLETE PATH: ", complete_path)
-
-	// c.String(http.StatusOK, "HELLO")
-	c.File(complete_path)
+	if !enableAPI {
+		c.JSON(http.StatusUnauthorized, "")
+	} else {
+		i, _ := strconv.Atoi(c.Query("index"))
+		// get list of files in shared folder
+		sharedFiles := utils.ListFilesInSharedDirectory(config.GetConfigValueString(config.SharedDirectory))
+		fmt.Println("FILE THAT I WOULD SEND: , ", sharedFiles[i], "i = ", i, "param=", c.Query("index"))
+		// I need to be able to construct the path to the file in question
+		complete_path := config.ConstructCompleteFilePath(sharedFiles[i])
+		fmt.Println("============================\nCOMPLETE PATH: ", complete_path)
+		c.File(complete_path)
+	}
 }
 
-// TODO : test to make sure that this works once I get home
 func LANDiscovery() []string {
 	log.Println("Running LAN Discovery...")
 	peers := make([]string, 0)
-	// discover peers
-	discoveries, err := peerdiscovery.Discover(peerdiscovery.Settings{
-		Limit:     -1,
-		Payload:   []byte("test"),
-		Delay:     100 * time.Millisecond,
-		TimeLimit: 3 * time.Second,
-		Notify: func(d peerdiscovery.Discovered) {
-			// log.Println(d)
+	if enableAPI {
+		// discover peers
+		discoveries, err := peerdiscovery.Discover(peerdiscovery.Settings{
+			Limit:     -1,
+			Payload:   []byte("test"),
+			Delay:     100 * time.Millisecond,
+			TimeLimit: 3 * time.Second,
+			Notify: func(d peerdiscovery.Discovered) {
+				// log.Println(d)
 
-		},
-		MulticastAddress: "224.0.0.2",
-	})
+			},
+			MulticastAddress: "224.0.0.2",
+		})
 
-	// print out results
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		if len(discoveries) > 0 {
-			fmt.Printf("Found %d other computers\n", len(discoveries))
-			for i, d := range discoveries {
-				fmt.Printf("%d) '%s' with payload '%s'\n", i, d.Address, d.Payload)
-				peers = append(peers, d.Address)
-			}
+		// print out results
+		if err != nil {
+			log.Fatal(err)
 		} else {
-			fmt.Println("Found no devices. You need to run this on another computer at the same time.")
+			if len(discoveries) > 0 {
+				fmt.Printf("Found %d other computers\n", len(discoveries))
+				for i, d := range discoveries {
+					fmt.Printf("%d) '%s' with payload '%s'\n", i, d.Address, d.Payload)
+					peers = append(peers, d.Address)
+				}
+			} else {
+				fmt.Println("Found no devices. You need to run this on another computer at the same time.")
+			}
 		}
+	} else {
+		log.Println("Current network not trusted, network discovery is disabled")
 	}
 	return peers
 }

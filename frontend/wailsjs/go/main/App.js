@@ -14,6 +14,10 @@ export function GetConfigValueStringList(arg1) {
   return window['go']['main']['App']['GetConfigValueStringList'](arg1);
 }
 
+export function GetCurrentNetworkName() {
+  return window['go']['main']['App']['GetCurrentNetworkName']();
+}
+
 export function GetLocalIP() {
   return window['go']['main']['App']['GetLocalIP']();
 }

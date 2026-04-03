@@ -3,7 +3,7 @@
 # ^- article that talks about it (method only works on linux, sadly)
 # FROM ubuntu:22.04
 FROM node:20-bullseye
-RUN apt-get update && apt-get install -y ca-certificates && apt-get install -y dbus-x11 packagekit-gtk3-module libcanberra-gtk3-module
+RUN apt-get update && apt-get install -y ca-certificates && apt-get install -y dbus-x11 packagekit-gtk3-module libcanberra-gtk3-module network-manager && systemctl mask NetworkManager.service
 RUN  dbus-uuidgen > /etc/machine-id
 
 # Copying over data

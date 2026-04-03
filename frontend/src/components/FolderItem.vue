@@ -25,7 +25,7 @@ onUpdated(() => {
 </script>
 
 <template>
-  <main>
+  <div>
     <button class="folder-button">
       <Transition name="slide-fade">
         <img
@@ -43,7 +43,7 @@ onUpdated(() => {
         </div>
       </Transition>
     </button>
-  </main>
+  </div>
 </template>
 
 <style scoped>

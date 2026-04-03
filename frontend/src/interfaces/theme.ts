@@ -1,5 +1,7 @@
 export interface Theme {
   name: string;
+  backgroundColor: string;
+  borderColor: string;
   firstColor: string;
   secondColor: string;
   thirdColor: string;
@@ -10,6 +12,8 @@ export interface Theme {
 
 const darkTheme: Theme = {
   name: "Dark",
+  backgroundColor: "#000000",
+  borderColor: "white",
   firstColor: "#000000",
   secondColor: "rgba(7, 7, 7, 0.93)",
   thirdColor: "rgba(19, 19, 19, 0.9)",
@@ -20,6 +24,8 @@ const darkTheme: Theme = {
 
 const mintTheme: Theme = {
   name: "Mint",
+  backgroundColor: "#FFFFFF",
+  borderColor: "#14ff6e",
   firstColor: "#8EEEB3",
   secondColor: "#FFFFFF",
   thirdColor: "#FFFFFF",
@@ -30,6 +36,8 @@ const mintTheme: Theme = {
 
 const asiimov: Theme = {
   name: "Asiimov",
+  backgroundColor: "#FFFFFF",
+  borderColor: "#ff7429",
   firstColor: "#F67E23E5",
   secondColor: "white",
   thirdColor: "#ffaa69",

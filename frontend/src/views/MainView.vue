@@ -16,16 +16,29 @@ async function synk() {
       "http://" + p + ":8080",
       sharedFolderContents,
     );
-    if (success) {
-      alert("Synk with " + p + " successful!");
-    } else {
-      alert("Synk with " + p + " failed.");
-    }
+    // if (success) {
+    //   alert("Synk with " + p + " successful!");
+    // } else {
+    //   alert("Synk with " + p + " failed.");
+    // }
   });
 }
 const selectedPeers = ref<string[]>([]);
 
 const peers = inject<string[] | null>("peers");
+
+// Trusted network check
+function checkIfNetworkTrusted() {
+  const cn = ref<string>(inject("networkName") ?? "");
+  const tn = ref<Array<string>>(inject("trustedNetworks") ?? []);
+  console.log("cn: ", cn, "tn: ", tn);
+  if (tn.value.includes(cn.value)) {
+    console.log("network trusted");
+    return true;
+  }
+  console.log("not trusted");
+  return false;
+}
 
 // Theme piping
 defineProps([
@@ -35,6 +48,8 @@ defineProps([
   "fourthColor",
   "textColor",
   "imageFilter",
+  "backgroundColor",
+  "borderColor",
 ]);
 </script>
 
@@ -60,7 +75,10 @@ defineProps([
         <label v-for="peer in peers" :for="peer">{{ peer }}</label>
       </div>
 
-      <button class="synk-button" v-if="selectedPeers.length > 0">
+      <button
+        class="synk-button"
+        v-if="selectedPeers.length > 0 && checkIfNetworkTrusted()"
+      >
         <img
           id="main-synk-button"
           @click="synk"
@@ -70,7 +88,7 @@ defineProps([
       <button class="synk-button-disabled" v-else>
         <img
           id="main-synk-button-disabled"
-          @click="synk"
+          @click=""
           src="../assets/images/refresh.png"
         />
       </button>
@@ -99,6 +117,7 @@ defineProps([
   height: 200px;
   border-radius: 200px;
   display: flex;
+  box-shadow: 0 0 10px 1px v-bind(borderColor);
 }
 .synk-button-disabled {
   margin-top: 200px;
@@ -113,15 +132,21 @@ defineProps([
   width: 200px;
   height: 200px;
   border-radius: 200px;
-  border: 1px solid black;
+  border: 1px solid v-bind(borderColor);
   display: flex;
+  box-shadow: 0 0 10px 1px v-bind(borderColor);
 }
 
 .peer-list-wrapper {
-  border: solid 1px darkgray;
+  border: solid 1px v-bind(borderColor);
+
+  box-shadow:
+    0 0 5px 1px v-bind(borderColor),
+    0 0 50px 10px v-bind(firstColor);
+  border-radius: 20px;
   width: 80%;
   margin: auto auto 60px auto;
-  background-color: v-bind(firstColor);
+  background-color: v-bind(backgroundColor);
 }
 
 #main-synk-button {
@@ -133,7 +158,7 @@ defineProps([
 #main-synk-button-disabled {
   width: 128px;
   margin: auto;
-  filter: contrast(100) invert();
+  filter: v-bind(imageFilter);
   opacity: 0.5;
 }
 
@@ -147,16 +172,18 @@ defineProps([
 #logo {
   font-family: "FrutigerAero";
   background: linear-gradient(
-    180deg,
+    200deg,
     v-bind(firstColor) 0,
     v-bind(secondColor) 20%,
-    v-bind(thirdColor) 40%,
+    v-bind(thirdColor) 80%,
     v-bind(fourthColor) 100%
   );
   margin: 40px auto;
   width: 50%;
   padding: 20px 0;
   border-radius: 40px;
+  border: 1px solid v-bind(borderColor);
+  box-shadow: 0 0 20px 1px v-bind(borderColor);
 }
 
 #main-synk-button:hover {

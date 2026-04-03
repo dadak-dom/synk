@@ -15,6 +15,7 @@ defineProps({
   thirdColor: { type: String, required: false },
   fourthColor: { type: String, required: false },
   textColor: { type: String, required: false },
+  borderColor: { type: String, required: false },
 });
 
 const emit = defineEmits(["moveDownDir"]);
@@ -25,7 +26,7 @@ function folderClick(folder: string) {
 </script>
 
 <template>
-  <main>
+  <div class="folder-selector-items">
     <div v-if="folders.length > 0" v-for="folder in folders">
       <FolderItem
         :text="folder"
@@ -43,7 +44,7 @@ function folderClick(folder: string) {
         :ignored="ignoredFiles.indexOf(file) != -1"
       />
     </div>
-  </main>
+  </div>
 </template>
 
 <style scoped></style>
