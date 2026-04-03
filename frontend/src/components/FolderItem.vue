@@ -26,7 +26,7 @@ onUpdated(() => {
 </script>
 
 <template>
-  <main>
+  <div>
     <button class="folder-button" :disabled="receiveOnly">
       <Transition name="slide-fade">
         <img
