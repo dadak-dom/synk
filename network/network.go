@@ -235,36 +235,39 @@ func GetFile(c *gin.Context) {
 	}
 }
 
-// TODO : test to make sure that this works once I get home
 func LANDiscovery() []string {
 	log.Println("Running LAN Discovery...")
 	peers := make([]string, 0)
-	// discover peers
-	discoveries, err := peerdiscovery.Discover(peerdiscovery.Settings{
-		Limit:     -1,
-		Payload:   []byte("test"),
-		Delay:     100 * time.Millisecond,
-		TimeLimit: 3 * time.Second,
-		Notify: func(d peerdiscovery.Discovered) {
-			// log.Println(d)
+	if enableAPI {
+		// discover peers
+		discoveries, err := peerdiscovery.Discover(peerdiscovery.Settings{
+			Limit:     -1,
+			Payload:   []byte("test"),
+			Delay:     100 * time.Millisecond,
+			TimeLimit: 3 * time.Second,
+			Notify: func(d peerdiscovery.Discovered) {
+				// log.Println(d)
 
-		},
-		MulticastAddress: "224.0.0.2",
-	})
+			},
+			MulticastAddress: "224.0.0.2",
+		})
 
-	// print out results
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		if len(discoveries) > 0 {
-			fmt.Printf("Found %d other computers\n", len(discoveries))
-			for i, d := range discoveries {
-				fmt.Printf("%d) '%s' with payload '%s'\n", i, d.Address, d.Payload)
-				peers = append(peers, d.Address)
-			}
+		// print out results
+		if err != nil {
+			log.Fatal(err)
 		} else {
-			fmt.Println("Found no devices. You need to run this on another computer at the same time.")
+			if len(discoveries) > 0 {
+				fmt.Printf("Found %d other computers\n", len(discoveries))
+				for i, d := range discoveries {
+					fmt.Printf("%d) '%s' with payload '%s'\n", i, d.Address, d.Payload)
+					peers = append(peers, d.Address)
+				}
+			} else {
+				fmt.Println("Found no devices. You need to run this on another computer at the same time.")
+			}
 		}
+	} else {
+		log.Println("Current network not trusted, network discovery is disabled")
 	}
 	return peers
 }
