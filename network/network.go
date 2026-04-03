@@ -104,8 +104,9 @@ func UpdateFileIgnoreList(c *gin.Context) {
 		// step 1: receive the config file & save it to a temp config location
 		file, _ := c.FormFile("file")
 		temp_file := config.RandomFileName(".jsonl")
-		c.SaveUploadedFile(file, temp_file)
+		c.SaveUploadedFile(file, filepath.Join(config.ConfigLocation, temp_file))
 		// step 2: compare the remote peer's list to your own & add any files that are not in your list already
+		log.Println("DEBUGGING: ", temp_file)
 		peer_file := config.OpenJsonLinesConfigFile(temp_file)
 		local_file := config.GetConfigValueStringList(config.FileIgnoreList)
 		new_local_file := slices.Clone(local_file)
@@ -127,7 +128,8 @@ func UpdateFolderIgnoreList(c *gin.Context) {
 		// step 1: receive the config file & save it to a temp config location
 		file, _ := c.FormFile("file")
 		temp_file := config.RandomFileName(".jsonl")
-		c.SaveUploadedFile(file, temp_file)
+		c.SaveUploadedFile(file, filepath.Join(config.ConfigLocation, temp_file))
+		log.Println("DEBUGGING: ", temp_file)
 		// step 2: compare the remote peer's list to your own & add any files that are not in your list already
 		peer_file := config.OpenJsonLinesConfigFile(temp_file)
 		local_file := config.GetConfigValueStringList(config.FolderIgnoreList)
@@ -150,7 +152,8 @@ func UpdateFolderIgnoreList(c *gin.Context) {
 // Return string of the current network - in other words, the SSID / "wifi name"
 func GetCurrentNetworkName() string {
 	output := ""
-	if runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "windows":
 		out, err := exec.Command("netsh", "wlan", "show", "interfaces").Output()
 		if err != nil {
 			log.Fatal("Failed to execute command: (in GetCurrentNetworkName)", err)
@@ -170,7 +173,7 @@ func GetCurrentNetworkName() string {
 		output = strings.Replace(output, " ", "", -1)
 		output = strings.Replace(output, "\n", "", -1)
 		output = strings.Replace(output, "\r", "", -1)
-	} else if runtime.GOOS == "linux" {
+	case "linux":
 		out, err := exec.Command("nmcli", "-t", "-f", "NAME", "connection", "show", "--active").Output()
 		if err != nil {
 			log.Fatal("Failed to execute command: (in GetCurrentNetworkName)", err)

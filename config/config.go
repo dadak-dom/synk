@@ -23,8 +23,8 @@ const (
 	SharedDirectory  ConfigItem = "shared_directory.txt"
 	FileIgnoreList   ConfigItem = "file_ignore.jsonl"
 	FolderIgnoreList ConfigItem = "folder_ignore.jsonl"
-	Theme ConfigItem = "theme.txt"
-	TrustedNetworks ConfigItem = "trusted_networks.jsonl"
+	Theme            ConfigItem = "theme.txt"
+	TrustedNetworks  ConfigItem = "trusted_networks.jsonl"
 	//TODO: add more as needed
 )
 
@@ -85,9 +85,9 @@ func randStringRunes(n int) string {
 	return string(b)
 }
 
-// return a randomly named file in the config location
+// return a randomly named file
 func RandomFileName(file_extension string) string {
-	return filepath.Join(ConfigLocation, randStringRunes(42)+file_extension)
+	return randStringRunes(42) + file_extension
 }
 
 func UpdateUserConfigString(updated_item ConfigItem, value string) {

@@ -16,11 +16,11 @@ async function synk() {
       "http://" + p + ":8080",
       sharedFolderContents,
     );
-    if (success) {
-      alert("Synk with " + p + " successful!");
-    } else {
-      alert("Synk with " + p + " failed.");
-    }
+    // if (success) {
+    //   alert("Synk with " + p + " successful!");
+    // } else {
+    //   alert("Synk with " + p + " failed.");
+    // }
   });
 }
 const selectedPeers = ref<string[]>([]);
