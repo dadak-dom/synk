@@ -10,6 +10,7 @@ defineProps({
   thirdColor: String,
   fourthColor: String,
   textColor: String,
+  receiveOnly: Boolean,
 });
 
 const showItem = ref<boolean>(false);
@@ -25,8 +26,8 @@ onUpdated(() => {
 </script>
 
 <template>
-  <div>
-    <button class="folder-button">
+  <main>
+    <button class="folder-button" :disabled="receiveOnly">
       <Transition name="slide-fade">
         <img
           v-show="!file && showItem"
@@ -37,6 +38,9 @@ onUpdated(() => {
       <Transition name="fade">
         <div class="folder-text" v-if="showItem">
           <div v-if="ignored" style="color: red">
+            <s>{{ text }}</s>
+          </div>
+          <div v-else-if="!ignored && receiveOnly" style="color: orange">
             <s>{{ text }}</s>
           </div>
           <div v-else>{{ text }}</div>

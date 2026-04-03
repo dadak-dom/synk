@@ -24,6 +24,7 @@ const (
 	FileIgnoreList   ConfigItem = "file_ignore.jsonl"
 	FolderIgnoreList ConfigItem = "folder_ignore.jsonl"
 	Theme            ConfigItem = "theme.txt"
+	AutoIgnoreAll    ConfigItem = "auto_ignore_all.txt"
 	TrustedNetworks  ConfigItem = "trusted_networks.jsonl"
 	//TODO: add more as needed
 )
@@ -34,6 +35,7 @@ var AllConfigItems = []ConfigItem{
 	FolderIgnoreList,
 	Theme,
 	TrustedNetworks,
+	AutoIgnoreAll,
 }
 
 // Get the config file location
@@ -111,7 +113,7 @@ func writeJsonLinesFile(dir string, fileName string, values []string) {
 
 func GetConfigValueString(value ConfigItem) string {
 	switch value {
-	case SharedDirectory, Theme:
+	case SharedDirectory, Theme, AutoIgnoreAll:
 		r := ReadTextFile(ConfigLocation, string(value))
 		log.Println("Config value for: ", value, r)
 		return r

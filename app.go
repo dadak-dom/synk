@@ -243,7 +243,6 @@ func (a *App) GetCurrentNetworkName() string {
 func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time) bool {
 	// Before comparing any files, make sure that the peer has the same ignore lists
 	// Get the peer's ignore lists; add your files to them, send them back
-	// peer_folder_ignore_list := http.NewRequest("GET", connection + "/getFolderIgnoreList")
 	err := ignoreListSynkHelper(connection)
 	if err != nil {
 		log.Fatal("Error when propogating ignore lists: ", err)
@@ -252,6 +251,10 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 	local_shared_folder := config.GetConfigValueString(config.SharedDirectory)
 	comparison := utils.CompareSharedDirectories(utils.ScanSharedDirectory(local_shared_folder), peerFileInfo)
 	filesToSend, filesToReceive := comparison["SEND"], comparison["RECEIVE"]
+	// Check if the user has selected "receive-only". If yes, don't send any files
+	if config.GetConfigValueString(config.AutoIgnoreAll) == "true" {
+		filesToSend = make([]string, 0)
+	}
 	fmt.Println("Files to send: ", filesToSend)
 	fmt.Println("Files to receive", filesToReceive)
 	log.Println("\n=========================\nCOMPARISON RESULTS\n========================\nLOCAL:")

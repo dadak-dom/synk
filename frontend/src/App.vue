@@ -2,6 +2,7 @@
 import { onMounted, provide, ref } from "vue";
 import { RouterLink } from "vue-router";
 import {
+  GetConfigValueString,
   GetPeerList,
   GetTheme,
   SetConfigItemString,
@@ -51,6 +52,10 @@ provide("trustedNetworks", trustedNetworks);
 
 const currentNetworkName = ref<string>("");
 provide("networkName", currentNetworkName);
+
+// Config items in settings
+const autoIgnoreAll = ref<boolean>();
+provide("autoIgnoreAll", autoIgnoreAll);
 
 // Themes
 import { Theme, GetThemeInterface } from "./interfaces/theme";
@@ -105,6 +110,11 @@ onMounted(() => {
     trustedNetworks.value = tn;
     // TODO: Make it so that synking is disabled until the user explicitly allows the network
   });
+  GetConfigValueString("auto_ignore_all.txt").then((aia) =>
+    aia == "true"
+      ? (autoIgnoreAll.value = true)
+      : (autoIgnoreAll.value = false),
+  );
   setInterval(updatePeerList, 3000);
 });
 </script>
