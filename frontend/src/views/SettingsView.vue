@@ -75,12 +75,17 @@ onMounted(() => {
 <template>
   <main>
     <div class="title">
-      <h1>Settings</h1>
+      <h1>Settings<br /></h1>
     </div>
     <div class="settings">
       <div class="private-ip-wrapper">
-          <div>My private IP:</div>
-          <div @mouseenter="revealIP = true" @mouseleave="revealIP = false" class="private-ip">{{ myPrivateIP }}
+        <div>My private IP:</div>
+        <div
+          @mouseenter="revealIP = true"
+          @mouseleave="revealIP = false"
+          class="private-ip"
+        >
+          {{ myPrivateIP }}
           <div :hidden="revealIP" class="censor-text">.</div>
         </div>
       </div>
@@ -93,7 +98,12 @@ onMounted(() => {
         >
           Trust my network
         </button>
-        <button @click="resetTrustedNetworks" :disabled="trustedNetworks.length == 0">Reset trusted networks</button>
+        <button
+          @click="resetTrustedNetworks"
+          :disabled="trustedNetworks.length == 0"
+        >
+          Reset trusted networks
+        </button>
       </div>
       <div class="theme-selector">
         <label for="themes">Theme:</label>
@@ -127,7 +137,6 @@ onMounted(() => {
   gap: 10px;
 }
 .trusted-networks-wrapper {
-  
 }
 .private-ip-wrapper {
   display: flex;

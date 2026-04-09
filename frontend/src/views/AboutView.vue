@@ -2,7 +2,10 @@
 
 <template>
   <main>
-    <h1 class="title">About Synk</h1>
+    <h1 class="title">
+      About<br />
+      Synk
+    </h1>
     <p>Paragraph about how to use the program</p>
     <p>Paragraph about troubleshooting connection issues</p>
   </main>
