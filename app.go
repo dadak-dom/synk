@@ -66,65 +66,65 @@ func (a *App) startup(ctx context.Context) {
 func listenForAutoSynk(fileUpdates <-chan string) {
 	// TODO: handle any updates to files in watch directory
 	for fu := range fileUpdates {
-		log.Println(utils.GetStandardizedFileName(fu))
-		// if count > 0 {
-		// 	continue
-		// }
-		// count += 1
-		for _, peer := range peerList {
-			connection := "http://" + peer + ":8080"
-			file_content, errReading := os.Open(fu)
+		autoSynkEnabled := config.GetConfigValueString(config.EnableAutoSynk)
+		if autoSynkEnabled == "true" {
+			for _, peer := range peerList {
+				connection := "http://" + peer + ":8080"
+				file_content, errReading := os.Open(fu)
 
-			if errReading != nil {
-				log.Fatal("Could not open file: ", errReading)
-				// return false
+				if errReading != nil {
+					log.Fatal("Could not open file: ", errReading)
+					// return false
+				}
+
+				var requestBody bytes.Buffer
+				writer := multipart.NewWriter(&requestBody)
+
+				defer file_content.Close()
+
+				part, err := writer.CreateFormFile("file", filepath.Base(fu))
+				if err != nil {
+					log.Fatal("Error creating form file: ", err)
+					// return false
+				}
+
+				_, err = io.Copy(part, file_content)
+				if err != nil {
+					log.Fatal("Error copying file data: ", err)
+					// return false
+				}
+
+				err = writer.WriteField("dir", utils.GetStandardizedFileName(fu))
+				if err != nil {
+					log.Fatal("Error writing form field: ", err)
+					// return false
+				}
+
+				err = writer.Close()
+				if err != nil {
+					log.Fatal("Error closing writer: ", err)
+					// return false
+				}
+				url := connection + "/uploadFile"
+				req, err := http.NewRequest("POST", url, &requestBody)
+				if err != nil {
+					log.Fatal("Error creating request: ", err)
+					// return false
+				}
+
+				req.Header.Set("Content-Type", writer.FormDataContentType())
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				if err != nil {
+					log.Fatal("Error sending request: ", err)
+					// return false
+				}
+				defer resp.Body.Close()
+
+				log.Println("Server responded with status: ", resp.Status)
 			}
-
-			var requestBody bytes.Buffer
-			writer := multipart.NewWriter(&requestBody)
-
-			defer file_content.Close()
-
-			part, err := writer.CreateFormFile("file", filepath.Base(fu))
-			if err != nil {
-				log.Fatal("Error creating form file: ", err)
-				// return false
-			}
-
-			_, err = io.Copy(part, file_content)
-			if err != nil {
-				log.Fatal("Error copying file data: ", err)
-				// return false
-			}
-
-			err = writer.WriteField("dir", utils.GetStandardizedFileName(fu))
-			if err != nil {
-				log.Fatal("Error writing form field: ", err)
-				// return false
-			}
-
-			err = writer.Close()
-			if err != nil {
-				log.Fatal("Error closing writer: ", err)
-				// return false
-			}
-			url := connection + "/uploadFile"
-			req, err := http.NewRequest("POST", url, &requestBody)
-			if err != nil {
-				log.Fatal("Error creating request: ", err)
-				// return false
-			}
-
-			req.Header.Set("Content-Type", writer.FormDataContentType())
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Fatal("Error sending request: ", err)
-				// return false
-			}
-			defer resp.Body.Close()
-
-			log.Println("Server responded with status: ", resp.Status)
+		} else {
+			log.Println("Auto synk disabled, ignoring write...")
 		}
 	}
 }

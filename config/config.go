@@ -25,6 +25,7 @@ const (
 	FolderIgnoreList ConfigItem = "folder_ignore.jsonl"
 	Theme            ConfigItem = "theme.txt"
 	TrustedNetworks  ConfigItem = "trusted_networks.jsonl"
+	EnableAutoSynk   ConfigItem = "enable_auto_synk.txt"
 	//TODO: add more as needed
 )
 
@@ -34,6 +35,7 @@ var AllConfigItems = []ConfigItem{
 	FolderIgnoreList,
 	Theme,
 	TrustedNetworks,
+	EnableAutoSynk,
 }
 
 // Get the config file location
@@ -106,12 +108,12 @@ func writeJsonLinesFile(dir string, fileName string, values []string) {
 
 func GetConfigValueString(value ConfigItem) string {
 	switch value {
-	case SharedDirectory, Theme:
+	case SharedDirectory, Theme, EnableAutoSynk:
 		r := ReadTextFile(ConfigLocation, string(value))
 		log.Println("Config value for: ", value, r)
 		return r
 	default:
-		log.Fatal("Missing case in GetConfigValueString")
+		log.Fatal("Missing case in GetConfigValueString (did you forget to update the case?)")
 	}
 	return ""
 }
@@ -123,7 +125,7 @@ func GetConfigValueStringList(value ConfigItem) []string {
 		log.Println("Config value for: ", value)
 		return readJsonLinesFile(value)
 	default:
-		log.Fatal("Missing case in GetConfigValueStringList")
+		log.Fatal("Missing case in GetConfigValueStringList (did you forget to update the case?)")
 	}
 	return make([]string, 0)
 }
