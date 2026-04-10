@@ -41,7 +41,7 @@ async function updatePeerList() {
   const result = await GetPeerList();
   peers.value = result;
   console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
-  console.log(navigator.platform)
+  console.log(navigator.platform);
 }
 
 // Networking
@@ -93,14 +93,13 @@ onMounted(() => {
   GetTheme().then((th) => {
     updateTheme(th);
   });
-  GetCurrentNetworkName().then(
-    (network) =>
-      {if(navigator.platform.toLowerCase().includes("win")) {
-        currentNetworkName.value = network.replace(RegExp(/\s/gm), "")
-      } else if(navigator.platform.toLowerCase().includes("lin")) {
-        currentNetworkName.value = network
-      }}
-  );
+  GetCurrentNetworkName().then((network) => {
+    if (navigator.platform.toLowerCase().includes("win")) {
+      currentNetworkName.value = network.replace(RegExp(/\s/gm), "");
+    } else if (navigator.platform.toLowerCase().includes("lin")) {
+      currentNetworkName.value = network;
+    }
+  });
   GetConfigValueStringList("trusted_networks.jsonl").then((tn) => {
     trustedNetworks.value = tn;
     // TODO: Make it so that synking is disabled until the user explicitly allows the network
@@ -154,13 +153,7 @@ main {
   height: 100%;
   background: v-bind(backgroundColor);
   color: v-bind(textColor);
-  border: 2px solid v-bind(borderColor);
-}
-.outer-view {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  height: 100%;
+  /* border: 2px solid v-bind(borderColor); */
 }
 
 nav {

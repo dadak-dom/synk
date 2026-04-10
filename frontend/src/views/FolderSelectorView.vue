@@ -269,7 +269,7 @@ const props = defineProps([
 </script>
 
 <template>
-  <div class="outer-view">
+  <main class="outer-view">
     <div class="folder-selection-view">
       <div class="folder-view-wrapper">
         <h1 class="title">Shared Folder</h1>
@@ -379,12 +379,12 @@ const props = defineProps([
         </Transition>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <style scoped>
 .folder-selection-view {
-  height: 86%;
+  /* height: 86%; */
   width: 100%;
   display: flex;
   justify-content: center;
@@ -405,31 +405,24 @@ const props = defineProps([
   background: v-bind(backgroundColor);
 }
 
-.title {
-  border-radius: 20px;
-  border: 1px solid v-bind(borderColor);
-}
-
 .folder-selector-box {
-  height: 100%;
+  /* height: 100%; */
   width: 100%;
   border-left: 1px solid v-bind(borderColor);
   border-right: 1px solid v-bind(borderColor);
+  border-bottom: 1px solid v-bind(borderColor);
   background: v-bind(backgroundColor);
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
 }
 
 .change-folder-button-wrapper {
-  /* background-color: rgba(30, 30, 30, 0.8); */
-  /* background-color: linear-gradient(
-    200deg,
-    v-bind(firstColor),
-    v-bind(fourthColor)
-  ); */
   background: v-bind(backgroundColor);
   border-left: 1px solid v-bind(borderColor);
   border-right: 1px solid v-bind(borderColor);
+  border-bottom: 1px solid v-bind(borderColor);
   width: 100%;
-  height: 90%;
+  /* height: 90; */
   border-bottom-left-radius: 40px;
   border-bottom-right-radius: 40px;
 }
@@ -484,11 +477,7 @@ const props = defineProps([
 .options-and-current-dir .options-wrapper {
   display: grid;
   grid-template-columns: auto auto auto;
-  background: v-bind(backgroundColor);
-}
-
-.options-and-current-dir .option {
-  /* color: white; */
+  margin: 20px;
 }
 
 .current-directory {
