@@ -58,16 +58,11 @@ func configSetup() string {
 	return path
 }
 
-// FIXME: apparently there is a way to store preferences using:
-// runtime.StoreSet(ctx, key, value)
-// and
-// value, err := runtime.StoreGet(ctx, key)
-
-// describes where to find the files for each config item
-// var ConfigLocation = map[ConfigItem]string{
-// 	// SharedDirectory: "./config",
-// 	SharedDirectory: configSetup(),
-// }
+func GetConfigItemFileLocation(ci ConfigItem) string {
+	dir, _ := os.UserConfigDir()
+	path := filepath.Join(dir, "synk")
+	return filepath.Join(path, string(ci))
+}
 
 var ConfigLocation = configSetup()
 
