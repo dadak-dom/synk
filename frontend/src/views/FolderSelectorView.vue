@@ -412,12 +412,15 @@ const props = defineProps([
   border-right: 1px solid v-bind(borderColor);
   border-bottom: 1px solid v-bind(borderColor);
   background: v-bind(backgroundColor);
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
 }
 
 .change-folder-button-wrapper {
   background: v-bind(backgroundColor);
   border-left: 1px solid v-bind(borderColor);
   border-right: 1px solid v-bind(borderColor);
+  border-bottom: 1px solid v-bind(borderColor);
   width: 100%;
   /* height: 90; */
   border-bottom-left-radius: 40px;
@@ -474,11 +477,7 @@ const props = defineProps([
 .options-and-current-dir .options-wrapper {
   display: grid;
   grid-template-columns: auto auto auto;
-  background: v-bind(backgroundColor);
-}
-
-.options-and-current-dir .option {
-  /* color: white; */
+  margin: 20px;
 }
 
 .current-directory {
