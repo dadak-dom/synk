@@ -7,6 +7,7 @@ import {
   SetConfigItemStringList,
 } from "../../wailsjs/go/main/App";
 import { Theme, AllThemeNames } from "../interfaces/theme";
+import TrustedNetworkItem from "../components/TrustedNetworkItem.vue";
 const myPrivateIP = ref<string>("");
 const revealIP = ref<boolean>(false);
 
@@ -32,6 +33,10 @@ function addTrustedNetwork(network: string) {
       trustedNetworks.value = networks.concat([network]);
     },
   );
+}
+
+function removeTrustedNetwork(network: string) {
+  SetConfigItemStringList("trusted_networks.jsonl", trustedNetworks.value.filter((value) => value != network)).then(() => trustedNetworks.value = trustedNetworks.value.filter((value) => value != network))
 }
 
 function resetTrustedNetworks() {
@@ -86,7 +91,15 @@ onMounted(() => {
       </div>
       <div class="trusted-networks-wrapper">
         <div>Current network: {{ inject("networkName") }}</div>
-        <div>Trusted networks list: {{ trustedNetworks }}</div>
+        <div class="trusted-networks-wrapper-inner" v-if="trustedNetworks.length > 0">
+          <div>Trusted networks:</div>
+         <div v-for="network in trustedNetworks">
+          <TrustedNetworkItem 
+          :item-text="network" :border-color="borderColor"
+          @remove-trusted-network="removeTrustedNetwork"/>
+         </div>
+         </div>
+         <div class="trusted-networks-wrapper-inner-no-trust" v-else>No trusted networks...☹</div>
         <button
           @click="addTrustedNetwork(currentNetwork)"
           :disabled="checkIfAlreadyTrusted()"
@@ -126,8 +139,16 @@ onMounted(() => {
   justify-content: center;
   gap: 10px;
 }
-.trusted-networks-wrapper {
-  
+.trusted-networks-wrapper-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.trusted-networks-wrapper-inner-no-trust {
+  padding: 10px 0;
 }
 .private-ip-wrapper {
   display: flex;

@@ -64,7 +64,10 @@ defineProps([
 
 onMounted(() => {
   // check if autoSynk enabled or not
-  GetConfigValueString("enable_auto_synk.txt").then((value) => enableAutoSynk.value = Boolean(value))
+  GetConfigValueString("enable_auto_synk.txt").then((value) => 
+  {enableAutoSynk.value = (value === "true");
+    console.log(enableAutoSynk.value, "autosynk value that was received:")
+  })
 })
 </script>
 
