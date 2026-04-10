@@ -64,10 +64,7 @@ defineProps([
 
 onMounted(() => {
   // check if autoSynk enabled or not
-  GetConfigValueString("enable_auto_synk.txt").then((value) => 
-  {enableAutoSynk.value = (value === "true");
-    console.log(enableAutoSynk.value, "autosynk value that was received:")
-  })
+  GetConfigValueString("enable_auto_synk.txt").then((value) => enableAutoSynk.value = (value === "true"))
 })
 </script>
 
@@ -107,7 +104,7 @@ onMounted(() => {
         </div>
       <button
         class="synk-button"
-        v-if="selectedPeers.length > 0 && checkIfNetworkTrusted()"
+        v-if="selectedPeers.length > 0 && checkIfNetworkTrusted() && !enableAutoSynk"
       >
         <img
           id="main-synk-button"

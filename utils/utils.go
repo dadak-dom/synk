@@ -186,9 +186,16 @@ func CompareSharedDirectories(localDir map[string]time.Time, remoteDir map[strin
 	receive_list = append(receive_list, only_remote...)
 
 	for _, fileName := range in_both {
-		if localDirCleaned[fileName].Before(remoteDirCleaned[fileName]) {
+		localTimestamp, remoteTimestamp := localDirCleaned[fileName], remoteDirCleaned[fileName]
+		// check if their timestamps are within a 5-second window
+		window := 5
+		localBound, remoteBound := localTimestamp.Add(time.Duration(window)*time.Second), remoteTimestamp.Add(time.Duration(window)*time.Second)
+		if (remoteTimestamp.Before(localBound) && remoteTimestamp.After(localTimestamp)) || (localTimestamp.Before(remoteBound) && localTimestamp.After(remoteTimestamp)) {
+			continue
+		}
+		if localTimestamp.Before(remoteTimestamp) {
 			receive_list = append(receive_list, fileName)
-		} else if localDirCleaned[fileName].After(remoteDirCleaned[fileName]) {
+		} else if localTimestamp.After(remoteTimestamp) {
 			send_list = append(send_list, fileName)
 		}
 	}
