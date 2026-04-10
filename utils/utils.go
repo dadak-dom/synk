@@ -62,7 +62,7 @@ func ScanSharedDirectory(dir string) map[string]time.Time {
 			return nil
 		}
 		fmt.Println(info.ModTime())
-		output[strings.Replace(path, dir, "SYNK_ROOT_DIRECTORY", 1)] = info.ModTime()
+		output[GetStandardizedFileName(path)] = info.ModTime()
 		return nil
 	})
 	if err != nil {
@@ -75,7 +75,7 @@ func ScanSharedDirectory(dir string) map[string]time.Time {
 	return removeIgnoredFilesAndFolders(output)
 }
 
-func removeIgnoredFilesAndFolders(m map[string]time.Time) map[string]time.Time{
+func removeIgnoredFilesAndFolders(m map[string]time.Time) map[string]time.Time {
 	// get config info
 	o := m
 	ignore_files := config.GetConfigValueStringList(config.FileIgnoreList)
@@ -85,7 +85,7 @@ func removeIgnoredFilesAndFolders(m map[string]time.Time) map[string]time.Time{
 	}
 	for _, f := range ignore_folders {
 		for key := range o {
-			match, _ := regexp.MatchString("SYNK_ROOT_DIRECTORY[\\\\/]" + regexp.QuoteMeta(f), key)
+			match, _ := regexp.MatchString("SYNK_ROOT_DIRECTORY[\\\\/]"+regexp.QuoteMeta(f), key)
 			if match {
 				delete(o, key)
 			}
@@ -107,7 +107,7 @@ func IndexOf[K ~[]E, E comparable](s K, v E) int {
 // Convert the map of file->data to 2 sorted lists
 func ConvertSharedDirectoryMapToLists(m map[string]time.Time) ([]string, []time.Time) {
 	fileNames, fileMetadata := make([]string, 0), make([]time.Time, 0)
-	for k := range(cleanFileNames(m)) {
+	for k := range cleanFileNames(m) {
 		fileNames = append(fileNames, k)
 		fileMetadata = append(fileMetadata, m[k])
 	}
@@ -118,24 +118,24 @@ func ConvertSharedDirectoryMapToLists(m map[string]time.Time) ([]string, []time.
 	size := len(fileNames)
 	for i := 0; i < size; i++ {
 		min_index = i
-  		for j := i + 1; j < size; j++ {
+		for j := i + 1; j < size; j++ {
 			if fileNames[j] < fileNames[min_index] {
 				min_index = j
 			}
-     	 }
-      temp_filenames = fileNames[i]
-	  temp_meta = fileMetadata[i]
-      fileNames[i] = fileNames[min_index]
-	  fileMetadata[i] = fileMetadata[min_index]
-      fileNames[min_index] = temp_filenames
-	  fileMetadata[min_index] = temp_meta
+		}
+		temp_filenames = fileNames[i]
+		temp_meta = fileMetadata[i]
+		fileNames[i] = fileNames[min_index]
+		fileMetadata[i] = fileMetadata[min_index]
+		fileNames[min_index] = temp_filenames
+		fileMetadata[min_index] = temp_meta
 	}
 
 	return fileNames, fileMetadata
 }
 
 // To remove confusion across OS's, replace \'s with /'s
-func cleanFileNames(m map[string]time.Time) map[string]time.Time{
+func cleanFileNames(m map[string]time.Time) map[string]time.Time {
 	o := make(map[string]time.Time)
 	for fileName := range m {
 		new_key := strings.Replace(fileName, "\\", "/", -1)
@@ -150,11 +150,16 @@ func ListFilesInSharedDirectory(dir string) []string {
 	return o
 }
 
+func GetStandardizedFileName(fileName string) string {
+	sharedDir := config.GetConfigValueString(config.SharedDirectory)
+	return strings.Replace(fileName, sharedDir, "SYNK_ROOT_DIRECTORY", 1)
+}
 
 // Given: local directory contents, remote directory contents
 // Return: Files that need to be requested from remote peer, files that the remote peer needs
 //
 //	to request from the local peer
+//
 // FIXME: Make sure that this works across OS's (i.e. swap out the \'s for /'s)
 func CompareSharedDirectories(localDir map[string]time.Time, remoteDir map[string]time.Time) map[string][]string {
 	output := make(map[string][]string)
@@ -181,9 +186,16 @@ func CompareSharedDirectories(localDir map[string]time.Time, remoteDir map[strin
 	receive_list = append(receive_list, only_remote...)
 
 	for _, fileName := range in_both {
-		if localDirCleaned[fileName].Before(remoteDirCleaned[fileName]) {
+		localTimestamp, remoteTimestamp := localDirCleaned[fileName], remoteDirCleaned[fileName]
+		// check if their timestamps are within a 5-second window
+		window := 5
+		localBound, remoteBound := localTimestamp.Add(time.Duration(window)*time.Second), remoteTimestamp.Add(time.Duration(window)*time.Second)
+		if (remoteTimestamp.Before(localBound) && remoteTimestamp.After(localTimestamp)) || (localTimestamp.Before(remoteBound) && localTimestamp.After(remoteTimestamp)) {
+			continue
+		}
+		if localTimestamp.Before(remoteTimestamp) {
 			receive_list = append(receive_list, fileName)
-		} else if localDirCleaned[fileName].After(remoteDirCleaned[fileName]) {
+		} else if localTimestamp.After(remoteTimestamp) {
 			send_list = append(send_list, fileName)
 		}
 	}

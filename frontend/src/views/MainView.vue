@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { RunSynkOnPeer } from "../../wailsjs/go/main/App";
-import { inject, ref } from "vue";
+import { RunSynkOnPeer, GetConfigValueString, SetConfigItemString } from "../../wailsjs/go/main/App";
+import { inject, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 
 // TODO: This is how I could get the file information from a remote peer.
@@ -27,6 +27,16 @@ const selectedPeers = ref<string[]>([]);
 
 const peers = inject<string[] | null>("peers");
 
+const enableAutoSynk = ref<boolean>(false);
+
+function handleAutoSynk() {
+  if(enableAutoSynk.value == false) {
+    SetConfigItemString("enable_auto_synk.txt", "false")
+  } else {
+    SetConfigItemString("enable_auto_synk.txt", "true")
+  }
+}
+
 // Trusted network check
 function checkIfNetworkTrusted() {
   const cn = ref<string>(inject("networkName") ?? "");
@@ -51,6 +61,11 @@ defineProps([
   "backgroundColor",
   "borderColor",
 ]);
+
+onMounted(() => {
+  // check if autoSynk enabled or not
+  GetConfigValueString("enable_auto_synk.txt").then((value) => enableAutoSynk.value = (value === "true"))
+})
 </script>
 
 <template>
@@ -75,9 +90,21 @@ defineProps([
         <label v-for="peer in peers" :for="peer">{{ peer }}</label>
       </div>
 
+      <div class="option">
+          <div>Auto-Synk</div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              v-bind:checked="enableAutoSynk"
+              v-model="enableAutoSynk"
+              @change="handleAutoSynk"
+            />
+            <span class="slider round"></span>
+          </label>
+        </div>
       <button
         class="synk-button"
-        v-if="selectedPeers.length > 0 && checkIfNetworkTrusted()"
+        v-if="selectedPeers.length > 0 && checkIfNetworkTrusted() && !enableAutoSynk"
       >
         <img
           id="main-synk-button"

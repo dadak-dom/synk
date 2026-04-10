@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -12,12 +13,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"synk/config"
 	folderselector "synk/folder_selector"
 	"synk/network"
 	"synk/utils"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -45,30 +48,230 @@ func updatePeerList(p []string) {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	router := gin.Default()
-	updates := make(chan []string)
-	network.UpdateAPIStatus()
 
-	// place tasks that need periodic repetition in here
+	// TODO: implement a file watcher
+	// In order to update the actual file watcher, we need to watch the shared_directory config item for any changes
+	// Setting up file watcher:
+	network.UpdateAPIStatus()
+	sharedDirectoryUpdates := make(chan string)
+	autoSynkUpdates := make(chan string)
+	go watchSharedDirConfig(sharedDirectoryUpdates)
+	go watchSharedDirContents(sharedDirectoryUpdates, autoSynkUpdates)
+	go listenForPeers()
+	go startAPI()
+	// TODO: implement the below:
+	go listenForAutoSynk(autoSynkUpdates)
+}
+
+func listenForAutoSynk(fileUpdates <-chan string) {
+	// TODO: handle any updates to files in watch directory
+	for fu := range fileUpdates {
+		autoSynkEnabled := config.GetConfigValueString(config.EnableAutoSynk)
+		if autoSynkEnabled == "true" {
+			for _, peer := range peerList {
+				connection := "http://" + peer + ":8080"
+				file_content, errReading := os.Open(fu)
+
+				if errReading != nil {
+					log.Fatal("Could not open file: ", errReading)
+					// return false
+				}
+
+				var requestBody bytes.Buffer
+				writer := multipart.NewWriter(&requestBody)
+
+				defer file_content.Close()
+
+				part, err := writer.CreateFormFile("file", filepath.Base(fu))
+				if err != nil {
+					log.Fatal("Error creating form file: ", err)
+					// return false
+				}
+
+				_, err = io.Copy(part, file_content)
+				if err != nil {
+					log.Fatal("Error copying file data: ", err)
+					// return false
+				}
+
+				err = writer.WriteField("dir", utils.GetStandardizedFileName(fu))
+				if err != nil {
+					log.Fatal("Error writing form field: ", err)
+					// return false
+				}
+
+				err = writer.Close()
+				if err != nil {
+					log.Fatal("Error closing writer: ", err)
+					// return false
+				}
+				url := connection + "/uploadFile"
+				req, err := http.NewRequest("POST", url, &requestBody)
+				if err != nil {
+					log.Fatal("Error creating request: ", err)
+					// return false
+				}
+
+				req.Header.Set("Content-Type", writer.FormDataContentType())
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				if err != nil {
+					log.Fatal("Error sending request: ", err)
+					// return false
+				}
+				defer resp.Body.Close()
+
+				log.Println("Server responded with status: ", resp.Status)
+			}
+		} else {
+			log.Println("Auto synk disabled, ignoring write...")
+		}
+	}
+}
+
+func watchSharedDirConfig(updates chan<- string) {
+	log.Println("Creating watcher for shared directory config item...")
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
+	err = watcher.Add(config.GetConfigItemFileLocation(config.SharedDirectory))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			log.Println("event:", event)
+			if event.Has(fsnotify.Write) {
+				log.Println("modified file:", event.Name)
+				updates <- config.GetConfigValueString(config.SharedDirectory) // add the event to the shared channel
+			}
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Println("error:", err)
+		}
+	}
+}
+
+func watchSharedDirContents(sharedDirChange <-chan string, updatedFiles chan<- string) {
+	log.Println("Creating watcher for shared directory...")
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
+	// debounce state
+	const debounceDelay = 250 * time.Millisecond
+	timers := make(map[string]*time.Timer)
+	var mu sync.Mutex
+
+	sf := config.GetConfigValueString(config.SharedDirectory)
+	err = watcher.Add(sf)
+	filepath.WalkDir(sf, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			watcher.Add(path)
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("WATCHING THE FOLLOWING: ", watcher.WatchList())
+	for {
+		select {
+		case newDir := <-sharedDirChange:
+			// sf in this case is the old shared folder
+			// remove everything on watchlist
+			for _, watched := range watcher.WatchList() {
+				err = watcher.Remove(watched)
+				if err != nil {
+					log.Fatal("Error when removing sub-directories of old watchlist: ", err)
+				}
+			}
+
+			err = watcher.Add(newDir)
+			filepath.WalkDir(newDir, func(path string, d fs.DirEntry, err error) error {
+				if d.IsDir() {
+					watcher.Add(path)
+				}
+				return nil
+			})
+			log.Println("Watchlist has been updated; now watching the following: ", watcher.WatchList())
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			log.Println("event:", event)
+			// FIXME: For now , I will only be handling file modifications, not creations/deletions
+			if event.Has(fsnotify.Write) {
+				log.Println("modified file:", event.Name, "string version: ", event.String())
+				// Debouncing:  if timer exists for this file, cancel it
+				mu.Lock()
+				if t, exists := timers[event.Name]; exists {
+					t.Stop()
+				}
+				filename := event.Name
+
+				// Create a new timer that fires after no changes have occurred
+				timers[filename] = time.AfterFunc(debounceDelay, func() {
+					log.Println("debounced update:", filename)
+
+					updatedFiles <- filename
+
+					mu.Lock()
+					delete(timers, filename)
+					mu.Unlock()
+				})
+
+				mu.Unlock()
+			}
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Println("error:", err)
+		}
+	}
+}
+
+func listenForPeers() {
+	peerUpdates := make(chan []string)
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for range ticker.C {
-			updates <- network.LANDiscovery()
-			//update whether the API is enabled or not 
+			peerUpdates <- network.LANDiscovery()
+			//update whether the API is enabled or not
 			// FIXME: there should be a better way to de-couple the API status updates from the landiscovery updates.
 			network.UpdateAPIStatus()
 		}
 	}()
 
 	go func() {
-		for peers := range updates {
+		for peers := range peerUpdates {
 			log.Println("Updated peers:", peers)
 			updatePeerList(peers)
 		}
 	}()
+}
 
+func startAPI() {
+	router := gin.Default()
 	// FIXME: Consider setting up the API when starting a transfer, and then shutting it down when it's done
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
@@ -92,10 +295,6 @@ func (a *App) startup(ctx context.Context) {
 	router.GET("/getFolderIgnoreList", network.GetFolderIgnoreList)
 	router.GET("/getFileIgnoreList", network.GetFileIgnoreList)
 	router.Run(myLocalIP + APIport)
-	// TODO: Use the following guide to figure out how to send files back and forth:
-	// https://gin-gonic.com/en/docs/examples/upload-file/single-file/
-
-	// TODO: Add a check for a saved value for the shared directory
 }
 
 func (a *App) GetLocalIP() string {
@@ -216,7 +415,7 @@ func ignoreListSynkHelper(peer string) error {
 		} else {
 			url = peer + "/updateFileIgnoreList"
 		}
-		
+
 		req, err := http.NewRequest("POST", url, &requestBody)
 		if err != nil {
 			return err
@@ -328,9 +527,9 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		// resp, err := http.Get(connection + "/getFile?index=" + strconv.Itoa(fileIndex))
 
 		// get file that needs to be uploaded to peer
-		// FIXME: The line below is correct. Uncomment once done prototyping
+		// FIXME: Can make this a shared function (also used in auto-synk)
 		file_content, errReading := os.Open(config.ConstructCompleteFilePath(f))
-		
+
 		if errReading != nil {
 			log.Fatal("Could not open file: ", errReading)
 			return false
