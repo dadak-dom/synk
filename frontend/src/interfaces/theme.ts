@@ -35,7 +35,7 @@ const mintTheme: Theme = {
 };
 
 const asiimov: Theme = {
-  name: "Asiimov",
+  name: "DORFic",
   backgroundColor: "#FFFFFF",
   borderColor: "#ff7429",
   firstColor: "#F67E23E5",
