@@ -57,7 +57,7 @@ func GetLocalIP() string {
 				if runtime.GOOS == "windows" && ip == "192.168.56.1" { // FIXME: This is a bandaid solution.
 					continue
 				}
-				if strings.HasPrefix(ip, "192.168") || strings.HasPrefix(ip, "172.") {
+				if strings.HasPrefix(ip, "192.168") || strings.HasPrefix(ip, "10.") {
 					return ip
 				}
 				// return ipnet.IP.String()
@@ -158,7 +158,8 @@ func GetCurrentNetworkName() string {
 		if err != nil {
 			log.Fatal("Failed to execute command: (in GetCurrentNetworkName)", err)
 		}
-		re := regexp.MustCompile(`SSID[\s]*: (.*)[\s]*BSSID`)
+		// re := regexp.MustCompile(`SSID[\s]*: (.*)[\s]*BSSID`)
+		re := regexp.MustCompile(`SSID[\s]*: (.*)*\n`)
 		firstMatch := re.FindStringSubmatch(string(out))
 		if len(firstMatch) == 0 {
 			log.Println("Warning: No network name found!")

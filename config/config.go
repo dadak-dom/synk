@@ -110,7 +110,7 @@ func GetConfigValueString(value ConfigItem) string {
 	switch value {
 	case SharedDirectory, Theme, EnableAutoSynk:
 		r := ReadTextFile(ConfigLocation, string(value))
-		log.Println("Config value for: ", value, r)
+		log.Println("Config value (string) for: ", value, r)
 		return r
 	default:
 		log.Fatal("Missing case in GetConfigValueString (did you forget to update the case?)")
@@ -122,7 +122,7 @@ func GetConfigValueStringList(value ConfigItem) []string {
 	switch value {
 	// TODO: if more cases come, add them here
 	case FolderIgnoreList, FileIgnoreList, TrustedNetworks:
-		log.Println("Config value for: ", value)
+		log.Println("Config value (stringList) for: ", value)
 		return readJsonLinesFile(value)
 	default:
 		log.Fatal("Missing case in GetConfigValueStringList (did you forget to update the case?)")
