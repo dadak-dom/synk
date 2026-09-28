@@ -49,3 +49,8 @@ The idea is for <b>Synk</b> to allow you to seamlessly transition your work from
 
 Run the app locally with `wails dev`<br>
 Compile the app with `wails build`
+
+## Architecture
+
+### High-level overview
+<img width="464" height="282" alt="synk architecture" src="https://github.com/user-attachments/assets/cae943a6-f218-41bb-9b4c-2da4378ea672" />
