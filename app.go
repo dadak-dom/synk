@@ -58,13 +58,17 @@ func (a *App) startup(ctx context.Context) {
 	go watchSharedDirConfig(sharedDirectoryUpdates)
 	go watchSharedDirContents(sharedDirectoryUpdates, autoSynkUpdates)
 	go listenForPeers()
-	go startAPI()
+	//TODO:
+	/*
+		when an update is received via the API, that filename is given to a channel, which will tell the watcher to ignore the first set of changes
+	*/
+	filesToIgnore := network.RemoteFileUpdates{Files: make(chan string, 10)}
+	go startAPI(&filesToIgnore)
 	// TODO: implement the below:
 	go listenForAutoSynk(autoSynkUpdates)
 }
 
 func listenForAutoSynk(fileUpdates <-chan string) {
-	// TODO: handle any updates to files in watch directory
 	for fu := range fileUpdates {
 		autoSynkEnabled := config.GetConfigValueString(config.EnableAutoSynk)
 		if autoSynkEnabled == "true" {
@@ -116,7 +120,7 @@ func listenForAutoSynk(fileUpdates <-chan string) {
 				client := &http.Client{}
 				resp, err := client.Do(req)
 				if err != nil {
-					log.Fatal("Error sending request: ", err)
+					log.Fatal("Error sending request: ", err) // FIXME: Implement proper error handling
 					// return false
 				}
 				defer resp.Body.Close()
@@ -270,7 +274,7 @@ func listenForPeers() {
 	}()
 }
 
-func startAPI() {
+func startAPI(filesToIgnore *network.RemoteFileUpdates) {
 	router := gin.Default()
 	// FIXME: Consider setting up the API when starting a transfer, and then shutting it down when it's done
 	router.Use(cors.New(cors.Config{
@@ -288,7 +292,12 @@ func startAPI() {
 	// Send information about the shared folder to the "active" peer
 	router.GET("/getSharedFolder", network.GetSharedFolderInfo)
 	router.GET("/getFile", network.GetFile)
-	router.POST("/uploadFile", network.UploadFile)
+	// router.POST("/uploadFile", network.UploadFile)
+	router.POST("/uploadFile", func(c *gin.Context) {
+		log.Println("HELP ME!!!")
+		network.UploadFile(c, filesToIgnore)
+		log.Println("TESTING: IN THE APP.GO: ", filesToIgnore.Files)
+	})
 	router.POST("/updateFolderIgnoreList", network.UpdateFolderIgnoreList)
 	router.POST("/updateFileIgnoreList", network.UpdateFileIgnoreList)
 	router.GET("/resetIgnoreList", network.ResetIgnoreList)
@@ -574,7 +583,7 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Fatal("Error sending request: ", err)
+			log.Fatal("Error sending request: ", err) // FIXME: Implement proper error handling
 			return false
 		}
 		defer resp.Body.Close()

@@ -175,9 +175,17 @@ func OpenJsonLinesConfigFile(dir string) []string {
 func ConstructCompleteFilePath(ending string) string {
 	s := GetConfigValueString(SharedDirectory)
 	o := strings.Replace(ending, "SYNK_ROOT_DIRECTORY", s, 1)
+
+	return enforceCorrectSlashDirection(o)
+}
+
+// sometimes files that are sent over don't have the correct slashes... this will change them to the appropriate direction
+func enforceCorrectSlashDirection(s string) string {
 	// if running on windows, reverse the path cleaning
 	if runtime.GOOS == "windows" {
-		o = strings.Replace(o, "/", "\\", -1)
+		s = strings.Replace(s, "/", "\\", -1)
+	} else {
+		s = strings.Replace(s, "\\", "/", -1)
 	}
-	return o
+	return s
 }
