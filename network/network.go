@@ -25,6 +25,10 @@ import (
 
 var enableAPI = false
 
+type RemoteFileUpdates struct {
+	Files chan string
+}
+
 // Check whether or not to allow the API - i.e. am I connected to a trusted network?
 func UpdateAPIStatus() {
 	// get trusted networks
@@ -199,24 +203,34 @@ func ResetIgnoreList(c *gin.Context) {
 	}
 }
 
-func UploadFile(c *gin.Context) {
+func UploadFile(c *gin.Context, remoteFilesChannel *RemoteFileUpdates) {
 	if !enableAPI {
 		c.JSON(http.StatusUnauthorized, "")
 	} else {
 		file, _ := c.FormFile("file")
 		dir := c.PostForm("dir")
 		// check if the folder exists - if not, create it
-		temp := filepath.Dir(config.ConstructCompleteFilePath(dir))
+		completeFilePath := config.ConstructCompleteFilePath(dir)
+		temp := filepath.Dir(completeFilePath)
 		if _, err := os.Stat(temp); err != nil {
 			log.Println("Directory missing, creating now...", temp)
 			os.MkdirAll(temp, os.ModePerm)
 		}
 		log.Println("UPLOAD FILE RECEIVED: ", file.Filename, " IN DIRECTORY: ", dir)
 
-		log.Println("SAVING TO: ", config.ConstructCompleteFilePath(dir))
-		c.SaveUploadedFile(file, config.ConstructCompleteFilePath(dir))
+		log.Println("SAVING TO: ", completeFilePath)
+		// before saving, ensure that this change is not propogated further
+		remoteFilesChannel.Files <- completeFilePath
+		log.Println("TESTING!!: state of the current channel: ", &remoteFilesChannel.Files)
+
+		c.SaveUploadedFile(file, completeFilePath)
 
 		c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
+
+		// for f := range remoteFilesChannel.Files {
+		// 	log.Println("channel value: ", f)
+		// }
+
 	}
 }
 
