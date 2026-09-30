@@ -227,9 +227,9 @@ func UploadFile(c *gin.Context, remoteFilesChannel *RemoteFileUpdates) {
 
 		c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 
-		for f := range remoteFilesChannel.Files {
-			log.Println("channel value: ", f)
-		}
+		// for f := range remoteFilesChannel.Files {
+		// 	log.Println("channel value: ", f)
+		// }
 
 	}
 }

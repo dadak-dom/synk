@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -55,14 +56,15 @@ func (a *App) startup(ctx context.Context) {
 	network.UpdateAPIStatus()
 	sharedDirectoryUpdates := make(chan string)
 	autoSynkUpdates := make(chan string)
+	filesToIgnore := network.RemoteFileUpdates{Files: make(chan string, 10)}
 	go watchSharedDirConfig(sharedDirectoryUpdates)
-	go watchSharedDirContents(sharedDirectoryUpdates, autoSynkUpdates)
+	go watchSharedDirContents(sharedDirectoryUpdates, autoSynkUpdates, &filesToIgnore)
 	go listenForPeers()
 	//TODO:
 	/*
 		when an update is received via the API, that filename is given to a channel, which will tell the watcher to ignore the first set of changes
 	*/
-	filesToIgnore := network.RemoteFileUpdates{Files: make(chan string, 10)}
+
 	go startAPI(&filesToIgnore)
 	// TODO: implement the below:
 	go listenForAutoSynk(autoSynkUpdates)
@@ -167,7 +169,7 @@ func watchSharedDirConfig(updates chan<- string) {
 	}
 }
 
-func watchSharedDirContents(sharedDirChange <-chan string, updatedFiles chan<- string) {
+func watchSharedDirContents(sharedDirChange <-chan string, updatedFiles chan<- string, filesToIgnore *network.RemoteFileUpdates) {
 	log.Println("Creating watcher for shared directory...")
 
 	watcher, err := fsnotify.NewWatcher()
@@ -194,6 +196,13 @@ func watchSharedDirContents(sharedDirChange <-chan string, updatedFiles chan<- s
 	}
 
 	log.Println("WATCHING THE FOLLOWING: ", watcher.WatchList())
+	listFilesToIgnore := []string{}
+	// subroutine: watch for additions to the filesToIgnore channel, append them to the list
+	go func() {
+		for receivedFile := range filesToIgnore.Files {
+			listFilesToIgnore = append(listFilesToIgnore, receivedFile)
+		}
+	}()
 	for {
 		select {
 		case newDir := <-sharedDirChange:
@@ -233,8 +242,14 @@ func watchSharedDirContents(sharedDirChange <-chan string, updatedFiles chan<- s
 				timers[filename] = time.AfterFunc(debounceDelay, func() {
 					log.Println("debounced update:", filename)
 
-					updatedFiles <- filename
-
+					// check if the file was recently received via the upload API - if so, don't add
+					if i := slices.Index(listFilesToIgnore, filename); i > -1 {
+						listFilesToIgnore = append(listFilesToIgnore[:i], listFilesToIgnore[i+1:]...) // remove the received filename from the ignore channel
+						log.Println("File: ", filename, " was recently received via API, ignoring...")
+					} else {
+						updatedFiles <- filename
+						log.Println("File: ", filename, " was edited locally, need to send to others.")
+					}
 					mu.Lock()
 					delete(timers, filename)
 					mu.Unlock()
