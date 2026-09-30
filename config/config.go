@@ -26,6 +26,7 @@ const (
 	Theme            ConfigItem = "theme.txt"
 	TrustedNetworks  ConfigItem = "trusted_networks.jsonl"
 	EnableAutoSynk   ConfigItem = "enable_auto_synk.txt"
+	DeviceName       ConfigItem = "device_name.txt"
 	//TODO: add more as needed
 )
 
@@ -36,6 +37,11 @@ var AllConfigItems = []ConfigItem{
 	Theme,
 	TrustedNetworks,
 	EnableAutoSynk,
+	DeviceName,
+}
+
+// Every time the app starts up, check to see if the most important config items have been set. If not, set them.
+func ConfigInitSetup() {
 }
 
 // Get the config file location
@@ -58,6 +64,10 @@ func configSetup() string {
 		}
 	}
 	return path
+}
+
+func isConfigItemSet[A any](ci ConfigItem, isEmpty func(value A, emptyEquiv A) bool) bool {
+	cv := 
 }
 
 func GetConfigItemFileLocation(ci ConfigItem) string {
@@ -108,7 +118,7 @@ func writeJsonLinesFile(dir string, fileName string, values []string) {
 
 func GetConfigValueString(value ConfigItem) string {
 	switch value {
-	case SharedDirectory, Theme, EnableAutoSynk:
+	case SharedDirectory, Theme, EnableAutoSynk, DeviceName:
 		r := ReadTextFile(ConfigLocation, string(value))
 		log.Println("Config value (string) for: ", value, r)
 		return r
