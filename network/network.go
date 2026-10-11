@@ -37,11 +37,7 @@ type RemotePeer struct {
 
 type APIEndpoint func(*gin.Context)
 
-type APIEndpointWithChannel func(*gin.Context, *RemoteFileUpdates)
-
 type APIDecorator func(APIEndpoint) APIEndpoint
-
-type APIDecoratorWithChannel func(APIEndpointWithChannel) APIEndpointWithChannel
 
 func convertStringListToRemotePeersList(peers []string) ([]RemotePeer, error) {
 	var remotePeers []RemotePeer
