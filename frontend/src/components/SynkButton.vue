@@ -2,6 +2,7 @@
 import { GetPeerList } from "../../wailsjs/go/main/App";
 import { RunSynkOnPeer } from "../../wailsjs/go/main/App";
 import { onMounted, ref } from "vue";
+import { RemotePeer } from "../types/remotePeer";
 
 // TODO: This is how I could get the file information from a remote peer.
 async function synk() {
@@ -16,7 +17,7 @@ async function synk() {
   });
 }
 
-const peers = ref<string[]>([]);
+const peers = ref<RemotePeer[]>([]);
 const selectedPeers = ref<string[]>([]);
 
 async function updatePeerList() {
@@ -37,10 +38,10 @@ onMounted(() => {
       v-model="selectedPeers"
       v-for="peer in peers"
       type="checkbox"
-      :name="peer"
+      :name="peer.DeviceName"
       :value="peer"
     />
-    <label v-for="peer in peers" :for="peer">{{ peer }}</label>
+    <label v-for="peer in peers" :for="peer.DeviceName">{{ peer }}</label>
 
     <div>
       <img @click="synk" src="../assets/images/sink.png" />
