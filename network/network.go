@@ -34,6 +34,11 @@ type RemotePeer struct {
 	IP         string
 	DeviceName string
 }
+type requestHeader struct {
+	DeviceName string `header:"DeviceName"`
+}
+
+// var MY_REQUEST_HEADER = requestHeader{DeviceName: config.GetConfigValueString(config.DeviceName)}
 
 type APIEndpoint func(*gin.Context)
 
@@ -44,8 +49,8 @@ func convertStringListToRemotePeersList(peers []string) ([]RemotePeer, error) {
 
 	for _, peer := range peers {
 		var data struct {
-			IP   string `json:"IP"`
-			Name string `json:"Name"`
+			IP         string `json:"IP"`
+			DeviceName string `json:"DeviceName"`
 		}
 
 		if err := json.Unmarshal([]byte(peer), &data); err != nil {
@@ -54,32 +59,50 @@ func convertStringListToRemotePeersList(peers []string) ([]RemotePeer, error) {
 
 		remotePeers = append(remotePeers, RemotePeer{
 			IP:         data.IP,
-			DeviceName: data.Name,
+			DeviceName: data.DeviceName,
 		})
 	}
-
+	log.Println("Testing: ", remotePeers)
 	return remotePeers, nil
+}
+
+func getTrustedRemotePeersList() []RemotePeer {
+	output, err := convertStringListToRemotePeersList(config.GetConfigValueStringList(config.TrustedDevices))
+	if err != nil {
+		log.Fatal("Error when getting remote peers list, ", err)
+		return nil
+	}
+	return output
+}
+
+func getTrustedIPs() []string {
+	trusted_devices := config.GetConfigValueStringList(config.TrustedDevices)
+	// trusted_devices is []string, need to convert it to []RemotePeer
+
+	// must convert the string to a struct
+	converted_trusted_devices, err := convertStringListToRemotePeersList(trusted_devices)
+	if err != nil {
+		log.Fatal("Error when unmarshalling []string in convertStringListToRemotePeersList, ", err)
+	}
+	trusted_IPs := make([]string, len(converted_trusted_devices))
+	for index, device := range converted_trusted_devices {
+		trusted_IPs[index] = device.IP
+	}
+	return trusted_IPs
 }
 
 func WithAuth(endpoint_function APIEndpoint) APIEndpoint { // NOT including functions with channels (for the moment)
 	return func(c *gin.Context) {
 		// this is where the actual authentication happens
-		remote_ip := c.ClientIP()
-		trusted_devices := config.GetConfigValueStringList(config.TrustedDevices)
-		// trusted_devices is []string, need to convert it to []RemotePeer
+		// need to require a header that contains the device name
+		// use the header to construst a RemotePeer struct instance to compare aginst the trusted slice
+		h := requestHeader{}
 
-		// must convert the string to a struct
-		converted_trusted_devices, err := convertStringListToRemotePeersList(trusted_devices)
-		if err != nil {
-			log.Fatal("Error when unmarshalling []string in convertStringListToRemotePeersList, ", err)
+		if err := c.ShouldBindHeader(&h); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		trusted_IPs := make([]string, len(converted_trusted_devices))
-		for index, device := range converted_trusted_devices {
-			trusted_IPs[index] = device.IP
-		}
-		log.Println("REMOTE IP: ", remote_ip)
-		log.Println("trusted_Devices", trusted_devices)
-		if !slices.Contains(trusted_IPs, remote_ip) {
+		remotePeer := RemotePeer{IP: c.ClientIP(), DeviceName: h.DeviceName}
+		if !slices.Contains(getTrustedRemotePeersList(), remotePeer) {
 			c.JSON(http.StatusUnauthorized, "Unauthorized access attempted")
 		} else {
 			endpoint_function(c)
@@ -128,6 +151,11 @@ func GetLocalIP() string {
 	}
 	// return "192.168.0.238"
 	return ""
+}
+
+func CheckMyAuth(c *gin.Context) {
+	tips := getTrustedIPs()
+	c.JSON(http.StatusOK, slices.Contains(tips, c.ClientIP()))
 }
 
 func GetSharedFolderInfo(c *gin.Context) {

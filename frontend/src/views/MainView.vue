@@ -7,9 +7,14 @@ import { RemotePeer } from "../types/remotePeer";
 // TODO: This is how I could get the file information from a remote peer.
 async function synk() {
   const peers = selectedPeers.value;
+  const my_device_name = await GetConfigValueString("device_name.txt")
   peers.forEach(async (p) => {
     let url = "http://" + p + ":8080/getSharedFolder";
-    let response = await fetch(url);
+    let response = await fetch(url, {
+      headers: {
+        'DeviceName':my_device_name
+      }
+    });
     let sharedFolderContents = await response.json();
     console.log(sharedFolderContents);
     // return

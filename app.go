@@ -121,6 +121,7 @@ func listenForAutoSynk(fileUpdates <-chan string) {
 				}
 
 				req.Header.Set("Content-Type", writer.FormDataContentType())
+				req.Header.Set("DeviceName", config.GetConfigValueString(config.DeviceName))
 				client := &http.Client{}
 				resp, err := client.Do(req)
 				if err != nil {
@@ -326,6 +327,7 @@ func startAPI(filesToIgnore *network.RemoteFileUpdates) {
 	router.GET("/resetIgnoreList", gin.HandlerFunc(resetIgnoreListAuth))
 	router.GET("/getFolderIgnoreList", gin.HandlerFunc(getFolderIgnoreListAuth))
 	router.GET("/getFileIgnoreList", gin.HandlerFunc(getFileIgnoreListAuth))
+	router.GET("/authCheck", network.CheckMyAuth)
 	router.Run(myLocalIP + APIport)
 }
 
@@ -454,6 +456,7 @@ func ignoreListSynkHelper(peer string) error {
 		}
 
 		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("DeviceName", config.GetConfigValueString(config.DeviceName))
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
@@ -603,6 +606,7 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 		}
 
 		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("DeviceName", config.GetConfigValueString(config.DeviceName))
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
