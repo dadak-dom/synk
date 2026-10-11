@@ -1,7 +1,9 @@
 <script lang="ts" setup>
 import { GetPeerList } from "../../wailsjs/go/main/App";
 import { onMounted, ref } from "vue";
-const peers = ref<string[]>([]);
+import { RemotePeer } from "../types/remotePeer";
+
+const peers = ref<RemotePeer[]>([]);
 
 async function updatePeerList() {
   const result = await GetPeerList();

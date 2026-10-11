@@ -3,6 +3,7 @@
 package network
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -27,6 +28,67 @@ var enableAPI = false
 
 type RemoteFileUpdates struct {
 	Files chan string
+}
+
+type RemotePeer struct {
+	IP         string
+	DeviceName string
+}
+
+type APIEndpoint func(*gin.Context)
+
+type APIEndpointWithChannel func(*gin.Context, *RemoteFileUpdates)
+
+type APIDecorator func(APIEndpoint) APIEndpoint
+
+type APIDecoratorWithChannel func(APIEndpointWithChannel) APIEndpointWithChannel
+
+func convertStringListToRemotePeersList(peers []string) ([]RemotePeer, error) {
+	var remotePeers []RemotePeer
+
+	for _, peer := range peers {
+		var data struct {
+			IP   string `json:"IP"`
+			Name string `json:"Name"`
+		}
+
+		if err := json.Unmarshal([]byte(peer), &data); err != nil {
+			return nil, fmt.Errorf("failed to parse peer %q: %w", peer, err)
+		}
+
+		remotePeers = append(remotePeers, RemotePeer{
+			IP:         data.IP,
+			DeviceName: data.Name,
+		})
+	}
+
+	return remotePeers, nil
+}
+
+func WithAuth(endpoint_function APIEndpoint) APIEndpoint { // NOT including functions with channels (for the moment)
+	return func(c *gin.Context) {
+		// this is where the actual authentication happens
+		remote_ip := c.ClientIP()
+		trusted_devices := config.GetConfigValueStringList(config.TrustedDevices)
+		// trusted_devices is []string, need to convert it to []RemotePeer
+
+		// must convert the string to a struct
+		converted_trusted_devices, err := convertStringListToRemotePeersList(trusted_devices)
+		if err != nil {
+			log.Fatal("Error when unmarshalling []string in convertStringListToRemotePeersList, ", err)
+		}
+		trusted_IPs := make([]string, len(converted_trusted_devices))
+		for index, device := range converted_trusted_devices {
+			trusted_IPs[index] = device.IP
+		}
+		log.Println("REMOTE IP: ", remote_ip)
+		log.Println("trusted_Devices", trusted_devices)
+		if !slices.Contains(trusted_IPs, remote_ip) {
+			c.JSON(http.StatusUnauthorized, "Unauthorized access attempted")
+		} else {
+			endpoint_function(c)
+		}
+	}
 }
 
 // Check whether or not to allow the API - i.e. am I connected to a trusted network?
@@ -250,14 +312,15 @@ func GetFile(c *gin.Context) {
 	}
 }
 
-func LANDiscovery() []string {
+func LANDiscovery() []RemotePeer {
 	log.Println("Running LAN Discovery...")
-	peers := make([]string, 0)
+	peers := make([]RemotePeer, 0)
+	payload := config.GetConfigValueString(config.DeviceName)
 	if enableAPI {
 		// discover peers
 		discoveries, err := peerdiscovery.Discover(peerdiscovery.Settings{
 			Limit:     -1,
-			Payload:   []byte("test"),
+			Payload:   []byte(payload),
 			Delay:     100 * time.Millisecond,
 			TimeLimit: 3 * time.Second,
 			Notify: func(d peerdiscovery.Discovered) {
@@ -271,14 +334,15 @@ func LANDiscovery() []string {
 		if err != nil {
 			log.Fatal(err)
 		} else {
-			if len(discoveries) > 0 {
+			if len(discoveries) <= 0 {
+				fmt.Println("Found no devices. You need to run this on another computer at the same time.")
+			} else {
 				fmt.Printf("Found %d other computers\n", len(discoveries))
 				for i, d := range discoveries {
 					fmt.Printf("%d) '%s' with payload '%s'\n", i, d.Address, d.Payload)
-					peers = append(peers, d.Address)
+					// trusted_devices := config.GetConfigValueStringList(config.TrustedDevices)
+					peers = append(peers, RemotePeer{IP: d.Address, DeviceName: string(d.Payload)})
 				}
-			} else {
-				fmt.Println("Found no devices. You need to run this on another computer at the same time.")
 			}
 		}
 	} else {

@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { RunSynkOnPeer, GetConfigValueString, SetConfigItemString } from "../../wailsjs/go/main/App";
+import { RunSynkOnPeer, GetConfigValueString, SetConfigItemString, SetConfigItemStringList, GetConfigValueStringList } from "../../wailsjs/go/main/App";
 import { inject, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { RemotePeer } from "../types/remotePeer";
 
 // TODO: This is how I could get the file information from a remote peer.
 async function synk() {
@@ -23,11 +24,13 @@ async function synk() {
     // }
   });
 }
-const selectedPeers = ref<string[]>([]);
+const selectedPeers = ref<RemotePeer[]>([]);
 
-const peers = inject<string[] | null>("peers");
+const peers = inject<RemotePeer[]>("peers");
 
 const enableAutoSynk = ref<boolean>(false);
+
+const deviceName = inject<string>("deviceName");
 
 function handleAutoSynk() {
   if(enableAutoSynk.value == false) {
@@ -50,6 +53,11 @@ function checkIfNetworkTrusted() {
   return false;
 }
 
+// Update trusted peers config item
+function updateTrustedPeers(){
+  SetConfigItemStringList("trusted_devices.jsonl", selectedPeers.value.map((peer) => JSON.stringify(peer)))
+}
+
 // Theme piping
 defineProps([
   "firstColor",
@@ -65,6 +73,8 @@ defineProps([
 onMounted(() => {
   // check if autoSynk enabled or not
   GetConfigValueString("enable_auto_synk.txt").then((value) => enableAutoSynk.value = (value === "true"))
+  // get list of trusted devices
+  GetConfigValueStringList("trusted_devices.jsonl").then((value) => { selectedPeers.value = value.map((p) => JSON.parse(p))})
 })
 </script>
 
@@ -84,10 +94,10 @@ onMounted(() => {
           v-model="selectedPeers"
           v-for="peer in peers"
           type="checkbox"
-          :name="peer"
           :value="peer"
+          @change="updateTrustedPeers"
         />
-        <label v-for="peer in peers" :for="peer">{{ peer }}</label>
+        <label v-for="peer in peers" :for="peer.DeviceName">{{ peer.DeviceName }}</label>
       </div>
 
       <div class="option">

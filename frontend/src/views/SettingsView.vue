@@ -83,6 +83,7 @@ onMounted(() => {
       <h1>Settings<br /></h1>
     </div>
     <div class="settings">
+      <div>Device Name: {{ inject("deviceName") }}</div>
       <div class="private-ip-wrapper">
         <div>My private IP:</div>
         <div

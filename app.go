@@ -38,9 +38,9 @@ func NewApp() *App {
 
 var selectedFolder, err = os.UserHomeDir()
 
-var peerList = make([]string, 0)
+var peerList = make([]network.RemotePeer, 0)
 
-func updatePeerList(p []string) {
+func updatePeerList(p []network.RemotePeer) {
 	log.Println("Updating peer list: ", p)
 	peerList = p
 }
@@ -49,6 +49,8 @@ func updatePeerList(p []string) {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	// Ensure config items at least have default values
+	config.ConfigInitSetup()
 
 	// TODO: implement a file watcher
 	// In order to update the actual file watcher, we need to watch the shared_directory config item for any changes
@@ -75,7 +77,7 @@ func listenForAutoSynk(fileUpdates <-chan string) {
 		autoSynkEnabled := config.GetConfigValueString(config.EnableAutoSynk)
 		if autoSynkEnabled == "true" {
 			for _, peer := range peerList {
-				connection := "http://" + peer + ":8080"
+				connection := "http://" + peer.IP + ":8080" // FIXME: Don't want a hard-coded port anymore!
 				file_content, errReading := os.Open(fu)
 
 				if errReading != nil {
@@ -268,7 +270,7 @@ func watchSharedDirContents(sharedDirChange <-chan string, updatedFiles chan<- s
 }
 
 func listenForPeers() {
-	peerUpdates := make(chan []string)
+	peerUpdates := make(chan []network.RemotePeer)
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
@@ -304,20 +306,26 @@ func startAPI(filesToIgnore *network.RemoteFileUpdates) {
 		log.Fatal("Error: could not find local IP address (192.168 OR 172 address)")
 	}
 
-	// Send information about the shared folder to the "active" peer
-	router.GET("/getSharedFolder", network.GetSharedFolderInfo)
-	router.GET("/getFile", network.GetFile)
-	// router.POST("/uploadFile", network.UploadFile)
-	router.POST("/uploadFile", func(c *gin.Context) {
-		log.Println("HELP ME!!!")
+	// define endpoints with authentication decorators
+	getSharedFolderAuth := network.WithAuth(network.GetSharedFolderInfo)
+	getFileAuth := network.WithAuth(network.GetFile)
+	uploadFileAuth := network.WithAuth(func(c *gin.Context) {
 		network.UploadFile(c, filesToIgnore)
-		log.Println("TESTING: IN THE APP.GO: ", filesToIgnore.Files)
 	})
-	router.POST("/updateFolderIgnoreList", network.UpdateFolderIgnoreList)
-	router.POST("/updateFileIgnoreList", network.UpdateFileIgnoreList)
-	router.GET("/resetIgnoreList", network.ResetIgnoreList)
-	router.GET("/getFolderIgnoreList", network.GetFolderIgnoreList)
-	router.GET("/getFileIgnoreList", network.GetFileIgnoreList)
+	updateFolderIgnoreListAuth := network.WithAuth(network.UpdateFolderIgnoreList)
+	updateFileIgnoreListAuth := network.WithAuth(network.UpdateFileIgnoreList)
+	resetIgnoreListAuth := network.WithAuth(network.ResetIgnoreList)
+	getFolderIgnoreListAuth := network.WithAuth(network.GetFolderIgnoreList)
+	getFileIgnoreListAuth := network.WithAuth(network.GetFileIgnoreList)
+	// Send information about the shared folder to the "active" peer
+	router.GET("/getSharedFolder", gin.HandlerFunc(getSharedFolderAuth))
+	router.GET("/getFile", gin.HandlerFunc(getFileAuth))
+	router.POST("/uploadFile", gin.HandlerFunc(uploadFileAuth))
+	router.POST("/updateFolderIgnoreList", gin.HandlerFunc(updateFolderIgnoreListAuth))
+	router.POST("/updateFileIgnoreList", gin.HandlerFunc(updateFileIgnoreListAuth))
+	router.GET("/resetIgnoreList", gin.HandlerFunc(resetIgnoreListAuth))
+	router.GET("/getFolderIgnoreList", gin.HandlerFunc(getFolderIgnoreListAuth))
+	router.GET("/getFileIgnoreList", gin.HandlerFunc(getFileIgnoreListAuth))
 	router.Run(myLocalIP + APIport)
 }
 
@@ -391,7 +399,7 @@ func (a *App) Greet(name string) string {
 }
 
 // Returns the URL of the remote client that we are connecting to
-func (a *App) GetPeerList() []string {
+func (a *App) GetPeerList() []network.RemotePeer {
 	return peerList
 }
 

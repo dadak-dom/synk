@@ -7,6 +7,7 @@ import {
   SetConfigItemString,
   GetConfigValueStringList,
   GetCurrentNetworkName,
+  GetConfigValueString,
 } from "../wailsjs/go/main/App";
 
 // Router / Navbar stuff
@@ -32,7 +33,7 @@ function mouseOut() {
 
 // Peerlist tracking
 
-const peers = ref<string[] | null>(null);
+const peers = ref<RemotePeer[] | null>(null);
 const selectedPeers = ref<string[]>([]);
 
 provide("peers", peers);
@@ -52,8 +53,12 @@ provide("trustedNetworks", trustedNetworks);
 const currentNetworkName = ref<string>("");
 provide("networkName", currentNetworkName);
 
+const deviceName = ref<string>("");
+provide("deviceName", deviceName)
+
 // Themes
 import { Theme, GetThemeInterface } from "./interfaces/theme";
+import { RemotePeer } from "./types/remotePeer";
 
 const theme = ref<Theme>(GetThemeInterface("Dark"));
 
@@ -104,6 +109,9 @@ onMounted(() => {
     trustedNetworks.value = tn;
     // TODO: Make it so that synking is disabled until the user explicitly allows the network
   });
+  GetConfigValueString("device_name.txt").then((dn) => {
+    deviceName.value = dn;
+  })
   setInterval(updatePeerList, 3000);
 });
 </script>
