@@ -9,7 +9,7 @@ async function synk() {
   const peers = selectedPeers.value;
   const my_device_name = await GetConfigValueString("device_name.txt")
   peers.forEach(async (p) => {
-    let url = "http://" + p + ":8080/getSharedFolder";
+    let url = "http://" + p.IP + ":8080/getSharedFolder";
     let response = await fetch(url, {
       headers: {
         'DeviceName':my_device_name
