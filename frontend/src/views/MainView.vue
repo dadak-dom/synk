@@ -1,11 +1,25 @@
 <script lang="ts" setup>
-import { RunSynkOnPeer, GetConfigValueString, SetConfigItemString, SetConfigItemStringList, GetConfigValueStringList } from "../../wailsjs/go/main/App";
+import { RunSynkOnPeer, GetConfigValueString, SetConfigItemString, SetConfigItemStringList, GetConfigValueStringList, GetPeerList } from "../../wailsjs/go/main/App";
 import { inject, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { RemotePeer } from "../types/remotePeer";
 
+// Theme piping
+const props = defineProps([
+  "firstColor",
+  "secondColor",
+  "thirdColor",
+  "fourthColor",
+  "textColor",
+  "imageFilter",
+  "backgroundColor",
+  "borderColor",
+  "onlinePeers",
+]);
+
 // TODO: This is how I could get the file information from a remote peer.
 async function synk() {
+  console.log("TESTING: ", selectedPeers.value)
   const peers = selectedPeers.value;
   const my_device_name = await GetConfigValueString("device_name.txt")
   peers.forEach(async (p) => {
@@ -17,21 +31,16 @@ async function synk() {
     });
     let sharedFolderContents = await response.json();
     console.log(sharedFolderContents);
-    // return
     const success = await RunSynkOnPeer(
-      "http://" + p + ":8080",
+      "http://" + p.IP + ":8080",
       sharedFolderContents,
     );
-    // if (success) {
-    //   alert("Synk with " + p + " successful!");
-    // } else {
-    //   alert("Synk with " + p + " failed.");
-    // }
   });
 }
 const selectedPeers = ref<RemotePeer[]>([]);
 
-const peers = inject<RemotePeer[]>("peers");
+// const peers = inject<RemotePeer[]>("peers");
+// const peers = ref<RemotePeer[]>([])
 
 const enableAutoSynk = ref<boolean>(false);
 
@@ -61,19 +70,11 @@ function checkIfNetworkTrusted() {
 // Update trusted peers config item
 function updateTrustedPeers(){
   SetConfigItemStringList("trusted_devices.jsonl", selectedPeers.value.map((peer) => JSON.stringify(peer)))
+  console.log("Selected peers: ", selectedPeers.value)
+  console.log("Function in question: " , selectedPeers.value.filter((function (p: RemotePeer) {
+              return props.onlinePeers.indexOf(p) >= 0
+            })))
 }
-
-// Theme piping
-defineProps([
-  "firstColor",
-  "secondColor",
-  "thirdColor",
-  "fourthColor",
-  "textColor",
-  "imageFilter",
-  "backgroundColor",
-  "borderColor",
-]);
 
 onMounted(() => {
   // check if autoSynk enabled or not
@@ -88,8 +89,8 @@ onMounted(() => {
     <div class="main-view-wrapper">
       <h1 id="logo" class="title">Synk</h1>
       <div class="peer-list-wrapper">
-        <p v-if="peers == null">Scanning for peers...</p>
-        <p v-else-if="peers !== null && peers.length == 0">
+        <p v-if="onlinePeers == null">Scanning for peers...</p>
+        <p v-else-if="onlinePeers !== null && onlinePeers.length == 0">
           No peers found.
           <RouterLink to="/settings"
             ><span>Check your connection.</span></RouterLink
@@ -97,12 +98,25 @@ onMounted(() => {
         </p>
         <input
           v-model="selectedPeers"
-          v-for="peer in peers"
+          v-for="peer in onlinePeers"
           type="checkbox"
           :value="peer"
           @change="updateTrustedPeers"
         />
-        <label v-for="peer in peers" :for="peer.DeviceName">{{ peer.DeviceName }}</label>
+        <label v-for="peer in onlinePeers" :for="peer.DeviceName">{{ peer.DeviceName }}</label>
+        <div v-if="onlinePeers != undefined && selectedPeers.length > onlinePeers.length">
+          <div>Spacer: offline peers</div>
+          <input
+            v-model="selectedPeers"
+            v-for="peer in selectedPeers.filter(function (p) {
+              return onlinePeers ? onlinePeers.indexOf(p) < 0 : true
+            })"
+            type="checkbox"
+            :value="peer"
+            @change="updateTrustedPeers"
+          />
+          <label v-for="peer in selectedPeers" :for="peer.DeviceName">{{ peer.DeviceName }}</label>
+        </div>
       </div>
 
       <div class="option">
@@ -119,7 +133,14 @@ onMounted(() => {
         </div>
       <button
         class="synk-button"
-        v-if="selectedPeers.length > 0 && checkIfNetworkTrusted() && !enableAutoSynk"
+        v-if="
+          onlinePeers != undefined &&
+          selectedPeers.some(p =>
+            onlinePeers.some((peer : RemotePeer) => peer.IP === p.IP)
+          ) &&
+          checkIfNetworkTrusted() &&
+          !enableAutoSynk
+        "
       >
         <img
           id="main-synk-button"

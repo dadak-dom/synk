@@ -34,14 +34,16 @@ function mouseOut() {
 // Peerlist tracking
 
 const peers = ref<RemotePeer[] | null>(null);
-const selectedPeers = ref<string[]>([]);
+// const selectedPeers = ref<RemotePeer[]>([]);
 
-provide("peers", peers);
+// provide("peers", peers);
 
 async function updatePeerList() {
   const result = await GetPeerList();
   peers.value = result;
-  console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
+  // console.log("Peers: ", peers.value, "Selected peers: ", selectedPeers.value);
+  console.log("Peers currently online: ", peers.value)
+  // console.log("Selected peers (APP): ", selectedPeers.value)
   console.log(navigator.platform);
 }
 
@@ -112,6 +114,7 @@ onMounted(() => {
   GetConfigValueString("device_name.txt").then((dn) => {
     deviceName.value = dn;
   })
+  // GetConfigValueStringList("trusted_devices.jsonl").then((value) => { selectedPeers.value = value.map((p) => JSON.parse(p))})
   setInterval(updatePeerList, 3000);
 });
 </script>
@@ -147,6 +150,7 @@ onMounted(() => {
     :imageFilter="themeFilter"
     :backgroundColor="backgroundColor"
     :borderColor="borderColor"
+    :onlinePeers="peers"
   >
     <transition name="fade" mode="out-in">
       <component :is="Component" :key="$route.path"></component>

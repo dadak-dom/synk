@@ -298,7 +298,7 @@ func startAPI(filesToIgnore *network.RemoteFileUpdates) {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{"GET", "POST"},
-		AllowHeaders: []string{"DeviceName"},
+		AllowHeaders: []string{"DeviceName", "Access-Control-Allow-Headers"},
 	}))
 
 	log.Println("LOCAL IP INFO: ", network.GetLocalIP())
