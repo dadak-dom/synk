@@ -77,6 +77,11 @@ func listenForAutoSynk(fileUpdates <-chan string) {
 		autoSynkEnabled := config.GetConfigValueString(config.EnableAutoSynk)
 		if autoSynkEnabled == "true" {
 			for _, peer := range peerList {
+				trusted_peers := network.GetTrustedRemotePeersList()
+				if !slices.Contains(trusted_peers, peer) {
+					log.Println("RemotePeer ", peer, " not trusted, skipping...")
+					continue
+				}
 				connection := "http://" + peer.IP + ":8080" // FIXME: Don't want a hard-coded port anymore!
 				file_content, errReading := os.Open(fu)
 
@@ -533,10 +538,20 @@ func (a *App) RunSynkOnPeer(connection string, peerFileInfo map[string]time.Time
 	for _, f := range filesToReceive {
 		fmt.Println("Receive file: ", f, " with index: ", utils.IndexOf(remote_names, f))
 		fileIndex := utils.IndexOf(remote_names, f)
-		resp, err := http.Get(connection + "/getFile?index=" + strconv.Itoa(fileIndex))
+		// resp, err := http.Get(connection + "/getFile?index=" + strconv.Itoa(fileIndex))
+		url := connection + "/getFile?index=" + strconv.Itoa(fileIndex)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		req.Header.Set("DeviceName", config.GetConfigValueString(config.DeviceName))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Error when getting file: ", err)
+		}
+
 		defer resp.Body.Close()
 
 		body, err := io.ReadAll(resp.Body)

@@ -66,7 +66,7 @@ func convertStringListToRemotePeersList(peers []string) ([]RemotePeer, error) {
 	return remotePeers, nil
 }
 
-func getTrustedRemotePeersList() []RemotePeer {
+func GetTrustedRemotePeersList() []RemotePeer {
 	output, err := convertStringListToRemotePeersList(config.GetConfigValueStringList(config.TrustedDevices))
 	if err != nil {
 		log.Fatal("Error when getting remote peers list, ", err)
@@ -102,7 +102,7 @@ func WithAuth(endpoint_function APIEndpoint) APIEndpoint { // NOT including func
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		remotePeer := RemotePeer{IP: c.ClientIP(), DeviceName: h.DeviceName}
-		if !slices.Contains(getTrustedRemotePeersList(), remotePeer) {
+		if !slices.Contains(GetTrustedRemotePeersList(), remotePeer) {
 			c.JSON(http.StatusUnauthorized, "Unauthorized access attempted")
 		} else {
 			endpoint_function(c)

@@ -17,13 +17,27 @@ const props = defineProps([
   "onlinePeers",
 ]);
 
-// TODO: This is how I could get the file information from a remote peer.
+async function authCheck(url : any) : Promise<Boolean> {
+  let auth = false;
+  const response = await fetch(url)
+  const response_json = await response.json()
+  console.log("response.json: ", response_json)
+  return response_json
+}
+
 async function synk() {
   console.log("TESTING: ", selectedPeers.value)
   const peers = selectedPeers.value;
   const my_device_name = await GetConfigValueString("device_name.txt")
   peers.forEach(async (p) => {
-    let url = "http://" + p.IP + ":8080/getSharedFolder";
+    const url = "http://" + p.IP + ":8080/getSharedFolder";
+    const auth_url = "http://" + p.IP + ":8080/authCheck";
+    const auth = await authCheck(auth_url);
+    if (!auth) {
+      // FIXME: notify the user properly that this went wrong
+      alert("Peer with name " + p.DeviceName + " does not have you as a trusted device, aborting synk")
+      return
+    }
     let response = await fetch(url, {
       headers: {
         'DeviceName':my_device_name
